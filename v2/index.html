@@ -1256,6 +1256,14 @@
       const [activeTab, setActiveTab] = useState("home");
       const [showLogSheet, setShowLogSheet] = useState(false);
 
+      const handleTabChange = useCallback((tab) => {
+        if (tab === "home" && activeTab === "home" && !showLogSheet) {
+          setShowLogSheet(true);
+        } else {
+          setActiveTab(tab);
+        }
+      }, [activeTab, showLogSheet]);
+
       return (
         <NutritionProvider>
           <ToastProvider>
@@ -1264,7 +1272,7 @@
             {activeTab === "home" && (
               <HomeScreen
                 onOpenLog={() => setShowLogSheet(true)}
-                onTabChange={setActiveTab}
+                onTabChange={handleTabChange}
               />
             )}
             {activeTab === "dashboard" && <DashboardScreen />}
@@ -1273,7 +1281,7 @@
             {showLogSheet && <LogDaySheet onClose={() => setShowLogSheet(false)} />}
 
             <Toast />
-            <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+            <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
           </ToastProvider>
         </NutritionProvider>
       );
