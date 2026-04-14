@@ -312,7 +312,7 @@ const INGREDIENTS = {
     vit_e:0, b12:0, folate:0, vit_c:0, potassium:0, magnesium:0
   },
   supp_krill: {
-    name:"Krill", defaultQty:1, unit:"softgel", category:"supplement",
+    name:"Krill Oil", defaultQty:1, unit:"softgel", category:"supplement",
     protein:0, carbs:0, fat:1.0, fiber:0, sat_fat:0.2,
     epa_dha:200, calcium:0, iron:0, zinc:0, vit_d:0,
     vit_e:0, b12:0, folate:0, vit_c:0, potassium:0, magnesium:0
@@ -330,7 +330,7 @@ const INGREDIENTS = {
     vit_e:0, b12:0, folate:0, vit_c:0, potassium:0, magnesium:0
   },
   supp_b12: {
-    name:"B12", defaultQty:1, unit:"nugget", category:"supplement",
+    name:"Vitamin B12", defaultQty:1, unit:"nugget", category:"supplement",
     protein:0, carbs:0, fat:0, fiber:0, sat_fat:0,
     epa_dha:0, calcium:0, iron:0, zinc:0, vit_d:0,
     vit_e:0, b12:5000, folate:0, vit_c:0, potassium:0, magnesium:0
@@ -354,7 +354,7 @@ const INGREDIENTS = {
     vit_e:0, b12:0, folate:0, vit_c:0, potassium:0, magnesium:0
   },
   supp_coq: {
-    name:"CoQ-10", defaultQty:1, unit:"cap", category:"supplement",
+    name:"Coenzyme Q-10", defaultQty:1, unit:"cap", category:"supplement",
     protein:0, carbs:0, fat:0, fiber:0, sat_fat:0,
     epa_dha:0, calcium:0, iron:0, zinc:0, vit_d:0,
     vit_e:0, b12:0, folate:0, vit_c:0, potassium:0, magnesium:0
@@ -372,25 +372,25 @@ const INGREDIENTS = {
     vit_e:0, b12:0, folate:0, vit_c:0, potassium:0, magnesium:0
   },
   supp_vitc: {
-    name:"Vit C 1000", defaultQty:1, unit:"tab", category:"supplement",
+    name:"Vitamin C 1000mg", defaultQty:1, unit:"tab", category:"supplement",
     protein:0, carbs:0, fat:0, fiber:0, sat_fat:0,
     epa_dha:0, calcium:0, iron:0, zinc:0, vit_d:0,
     vit_e:0, b12:0, folate:0, vit_c:1000, potassium:0, magnesium:0
   },
   supp_vitd: {
-    name:"Vit D3 1000", defaultQty:1, unit:"tab", category:"supplement",
+    name:"Vitamin D3 1000 IU", defaultQty:1, unit:"tab", category:"supplement",
     protein:0, carbs:0, fat:0, fiber:0, sat_fat:0,
     epa_dha:0, calcium:0, iron:0, zinc:0, vit_d:1000,
     vit_e:0, b12:0, folate:0, vit_c:0, potassium:0, magnesium:0
   },
   supp_vitd2: {
-    name:"Vit D3 2000", defaultQty:1, unit:"tab", category:"supplement",
+    name:"Vitamin D3 2000 IU", defaultQty:1, unit:"tab", category:"supplement",
     protein:0, carbs:0, fat:0, fiber:0, sat_fat:0,
     epa_dha:0, calcium:0, iron:0, zinc:0, vit_d:2000,
     vit_e:0, b12:0, folate:0, vit_c:0, potassium:0, magnesium:0
   },
   supp_vite: {
-    name:"Vit E", defaultQty:1, unit:"softgel", category:"supplement",
+    name:"Vitamin E", defaultQty:1, unit:"softgel", category:"supplement",
     protein:0, carbs:0, fat:0, fiber:0, sat_fat:0,
     epa_dha:0, calcium:0, iron:0, zinc:0, vit_d:0,
     vit_e:268, b12:0, folate:0, vit_c:0, potassium:0, magnesium:0
