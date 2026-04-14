@@ -33,7 +33,7 @@ const NUTRIENT_ICONS = {
   protein:"fitness_center", carbs:"grain", fat:"water_drop", fiber:"eco",
   sat_fat:"warning", epa_dha:"water_drop", calcium:"skeleton", iron:"hard_drive",
   zinc:"science", vit_d:"sunny", vit_e:"spa", b12:"pill",
-  folate:"pill", vit_c:"immune", potassium:"science", magnesium:"science"
+  folate:"pill", vit_c:"health_and_safety", potassium:"science", magnesium:"science"
 };
 
 // ============================================================
