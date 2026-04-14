@@ -29,13 +29,17 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Tailwind CSS
+      - name: Install v2 dependencies
         working-directory: v2
-        run: npm init -y && npm install tailwindcss @tailwindcss/forms @tailwindcss/container-queries
+        run: npm install
 
       - name: Build Tailwind CSS
         working-directory: v2
         run: npx tailwindcss -i input.css -o tailwind-out.css --minify
+
+      - name: Compile JSX (v2)
+        working-directory: v2
+        run: npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -1,10 +1,13 @@
 {
   "name": "v2",
   "version": "1.0.0",
-  "description": "",
+  "description": "Vitality Nutrition Calculator",
   "main": "data.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "babel src/app.jsx -o app.js",
+    "build:css": "tailwindcss -i input.css -o tailwind-out.css --minify",
+    "test": "playwright test",
+    "test:headless": "playwright test --reporter=list"
   },
   "keywords": [],
   "author": "",
@@ -14,5 +17,12 @@
     "tailwindcss": "^3.4.0",
     "@tailwindcss/forms": "^0.5.0",
     "@tailwindcss/container-queries": "^0.1.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.24.0",
+    "@babel/core": "^7.24.0",
+    "@babel/preset-react": "^7.24.0",
+    "@playwright/test": "^1.44.0",
+    "serve": "^14.2.0"
   }
 }
