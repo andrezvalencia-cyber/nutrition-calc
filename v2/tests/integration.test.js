@@ -89,3 +89,61 @@ test('export button creates a Blob download without CSP error', async ({ page })
   );
   expect(cspErrors).toHaveLength(0);
 });
+
+// ── Security regression: quickText length cap ────────────────────────────────
+
+test('quick entry caps outbound prompt content at MAX_QUICK_TEXT', async ({ page }) => {
+  const MAX = 500;
+  // Seed a fake API key so handleAIEstimate proceeds past the early return
+  await page.addInitScript(() => {
+    localStorage.setItem('nutrition_calc_v2_api_key', 'sk-ant-test-fake');
+  });
+
+  let capturedBody = null;
+  await page.route('https://api.anthropic.com/v1/messages', async (route) => {
+    capturedBody = JSON.parse(route.request().postData() || '{}');
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        content: [{
+          text: JSON.stringify({
+            protein: 1, carbs: 1, fat: 1, fiber: 1, sat_fat: 1,
+            epa_dha: 1, calcium: 1, iron: 1, zinc: 1, potassium: 1,
+            magnesium: 1, vit_c: 1, vit_d: 1, vit_e: 1, b12: 1, folate: 1,
+          }),
+        }],
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await page.waitForSelector('input[placeholder="Describe what you ate..."]', { timeout: 8000 });
+
+  const huge = 'x'.repeat(5000);
+  const input = page.locator('input[placeholder="Describe what you ate..."]');
+  await input.fill(huge);
+  await input.press('Enter');
+
+  const start = Date.now();
+  while (!capturedBody && Date.now() - start < 5000) {
+    await page.waitForTimeout(50);
+  }
+
+  expect(capturedBody).not.toBeNull();
+  expect(capturedBody.messages[0].content.length).toBeLessThanOrEqual(MAX);
+});
+
+// ── Security regression: React UMD pinned + SRI ──────────────────────────────
+
+test('unpkg <script> tags are pinned and carry SRI integrity', async ({ page }) => {
+  await page.goto('/');
+  const scripts = await page.locator('script[src*="unpkg.com"]').all();
+  expect(scripts.length).toBeGreaterThan(0);
+  for (const s of scripts) {
+    const src = await s.getAttribute('src');
+    const integrity = await s.getAttribute('integrity');
+    expect(src).toMatch(/react(-dom)?@\d+\.\d+\.\d+/);
+    expect(integrity).toMatch(/^sha384-.+/);
+  }
+});

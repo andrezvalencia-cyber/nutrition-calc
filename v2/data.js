@@ -638,6 +638,7 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 // ============================================================
 var STORAGE_KEY_V2 = "nutrition_calc_v2";
 var API_KEY_STORAGE = "nutrition_calc_v2_api_key";
+var MAX_QUICK_TEXT = 500;
 
 function loadState() {
   try {

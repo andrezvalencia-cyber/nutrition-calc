@@ -433,6 +433,7 @@ function HomeScreen({
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
     try {
+      const trimmed = quickText.slice(0, MAX_QUICK_TEXT);
       const sysPrompt = `You are a nutrition estimation assistant. Given a food description, respond with ONLY a JSON object containing these 16 nutrient keys with numeric values (no text, no markdown): ${NUTRIENT_KEYS.join(", ")}. Units: protein/carbs/fat/fiber/sat_fat in g, epa_dha/calcium/iron/zinc/potassium/magnesium/vit_c in mg, vit_d in IU, vit_e in mg, b12 in mcg, folate in mcg. Estimate reasonable values for a single serving.`;
       const resp = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -448,7 +449,7 @@ function HomeScreen({
           system: sysPrompt,
           messages: [{
             role: "user",
-            content: quickText
+            content: trimmed
           }]
         }),
         signal: controller.signal
@@ -469,7 +470,7 @@ function HomeScreen({
       const entry = {
         id: entryId,
         recipeId: null,
-        name: quickText.slice(0, 50),
+        name: trimmed.slice(0, 50),
         emoji: "\uD83E\uDD16",
         nutrients,
         ingredientStates: [],
