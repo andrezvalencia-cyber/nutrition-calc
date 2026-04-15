@@ -443,7 +443,7 @@ function HomeScreen({
           "anthropic-dangerous-direct-browser-access": "true"
         },
         body: JSON.stringify({
-          model: state.aiModel || "claude-haiku-4-5-20251001",
+          model: state.aiModel || "claude-sonnet-4-6",
           max_tokens: 300,
           system: sysPrompt,
           messages: [{
@@ -1271,7 +1271,7 @@ function SettingsScreen() {
     className: "text-sm font-semibold"
   }, "AI Model"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-on-surface-variant"
-  }, state.aiModel || "claude-haiku-4-5-20251001"))))), /*#__PURE__*/React.createElement("div", {
+  }, state.aiModel || "claude-sonnet-4-6"))))), /*#__PURE__*/React.createElement("div", {
     className: "space-y-1"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-xs font-semibold text-on-surface-variant tracking-wide px-1 mb-2 font-label"

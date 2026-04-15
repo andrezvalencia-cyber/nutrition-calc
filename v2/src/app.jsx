@@ -320,7 +320,7 @@
               "anthropic-dangerous-direct-browser-access": "true",
             },
             body: JSON.stringify({
-              model: state.aiModel || "claude-haiku-4-5-20251001",
+              model: state.aiModel || "claude-sonnet-4-6",
               max_tokens: 300,
               system: sysPrompt,
               messages: [{ role: "user", content: quickText }],
@@ -1108,7 +1108,7 @@
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold">AI Model</p>
-                  <p className="text-xs text-on-surface-variant">{state.aiModel || "claude-haiku-4-5-20251001"}</p>
+                  <p className="text-xs text-on-surface-variant">{state.aiModel || "claude-sonnet-4-6"}</p>
                 </div>
               </div>
             </div>
