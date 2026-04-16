@@ -147,3 +147,125 @@ test('unpkg <script> tags are pinned and carry SRI integrity', async ({ page }) 
     expect(integrity).toMatch(/^sha384-.+/);
   }
 });
+
+// ── Fat-soluble nutrient carryover (B12, Vit E, Vit D dead field) ─────────────
+// Characterization tests. Pin the formula documented in CLAUDE.md §5 and
+// implemented at app.jsx:484–498 (handleLogDay) + app.jsx:55–66 (runningTotals).
+// A mutation of either path must break at least one of these tests.
+
+test.describe('nutrient carryover', () => {
+  const ZERO_NUTRIENTS = {
+    protein: 0, carbs: 0, fat: 0, fiber: 0, sat_fat: 0, epa_dha: 0,
+    calcium: 0, iron: 0, zinc: 0, vit_d: 0, vit_e: 0, b12: 0,
+    folate: 0, vit_c: 0, potassium: 0, magnesium: 0,
+  };
+
+  async function seedState(page, overrides) {
+    await page.addInitScript((seed) => {
+      localStorage.setItem('nutrition_calc_v2', JSON.stringify(seed));
+    }, overrides);
+  }
+
+  function stateWithDayLog(nutrients) {
+    return {
+      currentDate: new Date().toISOString().slice(0, 10),
+      dayLog: [{ id: 'test-entry', name: 'Test Entry', nutrients }],
+      fatSolubleCarryover: { b12: 0, vit_e: 0, vit_d: 0 },
+      carryoverDaysRemaining: { b12: 0, vit_e: 0 },
+      dayHistory: [],
+      darkMode: true,
+      themeMode: 'dark',
+      aiModel: 'claude-sonnet-4-6',
+    };
+  }
+
+  async function triggerLogDay(page) {
+    await page.waitForSelector('button:has-text("Log Day")', { timeout: 8000 });
+    await page.click('button:has-text("Log Day")');
+    await page.waitForSelector('button:has-text("Log & Start New Day")', { timeout: 5000 });
+    await page.click('button:has-text("Log & Start New Day")');
+    await page.waitForFunction(() => {
+      const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+      return Array.isArray(s.dayLog) && s.dayLog.length === 0;
+    }, null, { timeout: 5000 });
+  }
+
+  async function readState(page) {
+    return page.evaluate(() =>
+      JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}')
+    );
+  }
+
+  test('B12 entry ≥ 1000 mcg sets fatSolubleCarryover.b12 to round(5000/7) = 714', async ({ page }) => {
+    const entryNutrients = { ...ZERO_NUTRIENTS, b12: 1000 };
+    await seedState(page, stateWithDayLog(entryNutrients));
+
+    await page.goto('/');
+    await triggerLogDay(page);
+
+    const post = await readState(page);
+    expect(post.fatSolubleCarryover.b12).toBe(Math.round(5000 / 7));
+    expect(post.fatSolubleCarryover.b12).toBe(714);
+    expect(post.carryoverDaysRemaining.b12).toBe(6);
+  });
+
+  test('Vit E entry ≥ 100 mg sets fatSolubleCarryover.vit_e to round(268/7) = 38', async ({ page }) => {
+    const entryNutrients = { ...ZERO_NUTRIENTS, vit_e: 100 };
+    await seedState(page, stateWithDayLog(entryNutrients));
+
+    await page.goto('/');
+    await triggerLogDay(page);
+
+    const post = await readState(page);
+    expect(post.fatSolubleCarryover.vit_e).toBe(Math.round(268 / 7));
+    expect(post.fatSolubleCarryover.vit_e).toBe(38);
+    expect(post.carryoverDaysRemaining.vit_e).toBe(6);
+  });
+
+  test('Vit D carryover slot stays 0 even when dayLog contains Vit D (dead field guard)', async ({ page }) => {
+    const entryNutrients = { ...ZERO_NUTRIENTS, vit_d: 999999 };
+    await seedState(page, stateWithDayLog(entryNutrients));
+
+    await page.goto('/');
+    await triggerLogDay(page);
+
+    const post = await readState(page);
+    expect(post.fatSolubleCarryover.vit_d).toBe(0);
+  });
+
+  test('carryover decrements to 0 when daysRemaining enters Log Day at 1', async ({ page }) => {
+    const state = stateWithDayLog({ ...ZERO_NUTRIENTS });
+    state.fatSolubleCarryover.b12 = 714;
+    state.carryoverDaysRemaining.b12 = 1;
+    await seedState(page, state);
+
+    await page.goto('/');
+    await triggerLogDay(page);
+
+    const post = await readState(page);
+    expect(post.fatSolubleCarryover.b12).toBe(0);
+    expect(post.carryoverDaysRemaining.b12).toBe(0);
+  });
+
+  test('runningTotals merges fatSolubleCarryover into gapsClosed count on mount', async ({ page }) => {
+    const state = stateWithDayLog({ ...ZERO_NUTRIENTS });
+    state.fatSolubleCarryover.b12 = 714;
+    state.fatSolubleCarryover.vit_e = 38;
+    state.carryoverDaysRemaining.b12 = 6;
+    state.carryoverDaysRemaining.vit_e = 6;
+    await seedState(page, state);
+
+    await page.goto('/');
+    await page.waitForSelector('button:has-text("Log Day")', { timeout: 8000 });
+    await page.click('button:has-text("Log Day")');
+    await page.waitForSelector('button:has-text("Log & Start New Day")', { timeout: 5000 });
+
+    const header = await page.locator('h2:has-text("Log Day")').locator('..').locator('span').first().textContent();
+    const match = header && header.match(/^(\d+)\/16$/);
+    expect(match).not.toBeNull();
+    const closed = parseInt(match[1], 10);
+    // Baseline (no merge): only sat_fat is closed (0 < 28 max) → closed = 1.
+    // With merge: B12 (714 ≥ 2.4) also closes → closed ≥ 2.
+    expect(closed).toBeGreaterThanOrEqual(2);
+  });
+});
