@@ -213,6 +213,10 @@ function BottomNav({
     icon: "bar_chart",
     label: "Dashboard"
   }, {
+    id: "insights",
+    icon: "monitoring",
+    label: "Insights"
+  }, {
     id: "settings",
     icon: "settings",
     label: "Settings"
@@ -1166,6 +1170,301 @@ function NutrientGroup({
 }
 
 // ============================================================
+// InsightsScreen — Weekly Report Card + Nutrient Heatmap
+// ============================================================
+
+function heatmapColor(pct, isDark, isMaxType) {
+  if (pct === null || pct === undefined) {
+    return isDark ? "hsl(0,0%,18%)" : "hsl(0,0%,92%)";
+  }
+  // For "maximum" type (sat_fat): low = good (green), high = bad (red)
+  var effective = isMaxType ? Math.max(0, 120 - pct) : Math.min(pct, 120);
+  var hue = Math.max(0, Math.min(effective, 120)) / 120 * 130;
+  if (isDark) {
+    var sat = effective === 0 && !isMaxType ? 0 : 60;
+    var light = effective === 0 && !isMaxType ? 18 : 25 + effective / 120 * 10;
+    return "hsl(" + hue + "," + sat + "%," + light + "%)";
+  }
+  var sat = effective === 0 && !isMaxType ? 0 : 50;
+  var light = effective === 0 && !isMaxType ? 92 : 82 - effective / 120 * 18;
+  return "hsl(" + hue + "," + sat + "%," + light + "%)";
+}
+function InsightsScreen() {
+  const {
+    state,
+    runningTotals,
+    gapsClosed
+  } = useNutrition();
+  const [range, setRange] = useState(7);
+  const [selectedCell, setSelectedCell] = useState(null);
+  const isDark = state.themeMode === "dark" || state.themeMode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+  // Build days array from history + today
+  const days = useMemo(() => {
+    const hist = (state.dayHistory || []).map(d => ({
+      date: d.date,
+      totals: d.totals || emptyNutrients(),
+      gapsClosed: d.gapsClosed || 0,
+      energy: d.energy ?? null,
+      digestion: d.digestion ?? null
+    }));
+    if ((state.dayLog || []).length > 0) {
+      const today = state.currentDate || todayStr();
+      // Don't duplicate if today is already in history
+      if (!hist.some(d => d.date === today)) {
+        hist.push({
+          date: today,
+          totals: {
+            ...runningTotals
+          },
+          gapsClosed: gapsClosed,
+          energy: null,
+          digestion: null
+        });
+      }
+    }
+    hist.sort((a, b) => a.date.localeCompare(b.date));
+    return hist;
+  }, [state.dayHistory, state.dayLog, state.currentDate, runningTotals, gapsClosed]);
+  const sliced = useMemo(() => days.slice(-range), [days, range]);
+
+  // Report card stats
+  const stats = useMemo(() => {
+    if (sliced.length === 0) return null;
+    const avgGaps = sliced.reduce((s, d) => s + d.gapsClosed, 0) / sliced.length;
+    const energyDays = sliced.filter(d => d.energy !== null);
+    const digestDays = sliced.filter(d => d.digestion !== null);
+    const avgEnergy = energyDays.length > 0 ? energyDays.reduce((s, d) => s + d.energy, 0) / energyDays.length : null;
+    const avgDigestion = digestDays.length > 0 ? digestDays.reduce((s, d) => s + d.digestion, 0) / digestDays.length : null;
+
+    // Per-nutrient hit rate
+    const hitCounts = {};
+    NUTRIENT_KEYS.forEach(k => {
+      hitCounts[k] = 0;
+    });
+    sliced.forEach(d => {
+      NUTRIENT_KEYS.forEach(k => {
+        if (getStatus(k, d.totals[k] || 0).closed) hitCounts[k]++;
+      });
+    });
+    const hitRate = {};
+    NUTRIENT_KEYS.forEach(k => {
+      hitRate[k] = hitCounts[k] / sliced.length;
+    });
+    const topHits = NUTRIENT_KEYS.filter(k => hitRate[k] >= 0.8).sort((a, b) => hitRate[b] - hitRate[a]);
+    const chronicGaps = NUTRIENT_KEYS.filter(k => hitRate[k] <= 0.3).sort((a, b) => hitRate[a] - hitRate[b]);
+    return {
+      avgGaps,
+      avgEnergy,
+      avgDigestion,
+      topHits,
+      chronicGaps,
+      hitRate
+    };
+  }, [sliced]);
+
+  // Heatmap data: nutrientKey -> array of { pct, value, date }
+  const heatmapData = useMemo(() => {
+    const data = {};
+    const groups = [{
+      label: "Macros",
+      keys: MACRO_KEYS
+    }, {
+      label: "Vitamins",
+      keys: VITAMIN_KEYS
+    }, {
+      label: "Minerals",
+      keys: MINERAL_KEYS
+    }];
+    groups.forEach(g => {
+      g.keys.forEach(k => {
+        data[k] = sliced.map(d => {
+          const val = d.totals[k] || 0;
+          const s = getStatus(k, val);
+          return {
+            pct: s.pct,
+            value: val,
+            date: d.date,
+            closed: s.closed
+          };
+        });
+      });
+    });
+    return data;
+  }, [sliced]);
+  const formatShortDate = dateStr => {
+    const d = new Date(dateStr + "T12:00:00");
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    return days[d.getDay()] + " " + (d.getMonth() + 1) + "/" + d.getDate();
+  };
+
+  // Empty state
+  if (days.length === 0) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "pt-20 pb-28 px-4 flex flex-col items-center justify-center min-h-[60vh]"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "liquid-glass rounded-[24px] p-8 text-center max-w-sm"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "monitoring",
+      size: 48,
+      className: "text-on-surface-variant mx-auto mb-4"
+    }), /*#__PURE__*/React.createElement("h2", {
+      className: "font-headline text-xl font-bold mb-2"
+    }, "No Insights Yet"), /*#__PURE__*/React.createElement("p", {
+      className: "text-on-surface-variant text-sm"
+    }, "Log your first full day to start seeing nutrition trends and patterns here.")));
+  }
+  const groups = [{
+    label: "Macros",
+    keys: MACRO_KEYS,
+    accent: "blue"
+  }, {
+    label: "Vitamins",
+    keys: VITAMIN_KEYS,
+    accent: "purple"
+  }, {
+    label: "Minerals",
+    keys: MINERAL_KEYS,
+    accent: "green"
+  }];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "pt-20 pb-28 px-4 space-y-6"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
+    className: "font-headline text-[34px] font-extrabold leading-tight"
+  }, "Insights"), /*#__PURE__*/React.createElement("p", {
+    className: "text-on-surface-variant text-sm mt-1"
+  }, "Your nutrition trends", sliced.length < range && sliced.length > 0 && /*#__PURE__*/React.createElement("span", {
+    className: "ml-1 opacity-60"
+  }, "(", sliced.length, " of ", range, " days)"))), stats && /*#__PURE__*/React.createElement("div", {
+    className: "liquid-glass rounded-[24px] p-5 space-y-4"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "font-headline text-lg font-bold"
+  }, "Report Card"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "liquid-glass-light rounded-2xl p-3 text-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-2xl font-bold"
+  }, sliced.length), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-on-surface-variant"
+  }, "Days Logged")), /*#__PURE__*/React.createElement("div", {
+    className: "liquid-glass-light rounded-2xl p-3 text-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-2xl font-bold"
+  }, Math.round(stats.avgGaps * 10) / 10), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-on-surface-variant"
+  }, "Avg Gaps Closed / 16")), /*#__PURE__*/React.createElement("div", {
+    className: "liquid-glass-light rounded-2xl p-3 text-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-2xl font-bold"
+  }, stats.avgEnergy !== null ? Math.round(stats.avgEnergy * 10) / 10 : "—"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-on-surface-variant"
+  }, "Avg Energy")), /*#__PURE__*/React.createElement("div", {
+    className: "liquid-glass-light rounded-2xl p-3 text-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-2xl font-bold"
+  }, stats.avgDigestion !== null ? Math.round(stats.avgDigestion * 10) / 10 : "—"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-on-surface-variant"
+  }, "Avg Digestion"))), stats.topHits.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-semibold text-on-surface-variant mb-2"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "check_circle",
+    size: 14,
+    className: "text-green-500 mr-1 inline-block align-middle"
+  }), "Consistently Hit"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1.5"
+  }, stats.topHits.map(k => /*#__PURE__*/React.createElement("span", {
+    key: k,
+    className: "px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/15 text-green-600 dark:text-green-400"
+  }, NUTRIENT_LABELS[k], " (", Math.round(stats.hitRate[k] * sliced.length), "/", sliced.length, ")")))), stats.chronicGaps.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-semibold text-on-surface-variant mb-2"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "warning",
+    size: 14,
+    className: "text-amber-500 mr-1 inline-block align-middle"
+  }), "Chronic Gaps"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-1.5"
+  }, stats.chronicGaps.map(k => /*#__PURE__*/React.createElement("span", {
+    key: k,
+    className: "px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400"
+  }, NUTRIENT_LABELS[k], " (", Math.round(stats.hitRate[k] * sliced.length), "/", sliced.length, ")"))))), /*#__PURE__*/React.createElement("div", {
+    className: "liquid-glass rounded-[24px] p-5 space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "font-headline text-lg font-bold"
+  }, "Nutrient Heatmap"), /*#__PURE__*/React.createElement("div", {
+    className: "flex bg-on-surface/5 rounded-full p-0.5 gap-0.5"
+  }, [7, 14, 30].map(r => /*#__PURE__*/React.createElement("button", {
+    key: r,
+    className: `px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${range === r ? "bg-gradient-to-r from-blue-600 to-blue-400 text-white shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`,
+    onClick: () => {
+      setRange(r);
+      setSelectedCell(null);
+    }
+  }, r, "d")))), selectedCell && /*#__PURE__*/React.createElement("div", {
+    className: "liquid-glass-light rounded-xl p-3 text-sm flex items-center justify-between animate-fade-in"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold"
+  }, NUTRIENT_LABELS[selectedCell.key]), /*#__PURE__*/React.createElement("span", {
+    className: "text-on-surface-variant ml-2"
+  }, fmtVal(selectedCell.key, selectedCell.value), " / ", getTargetStr(selectedCell.key))), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-on-surface-variant"
+  }, formatShortDate(selectedCell.date))), /*#__PURE__*/React.createElement("div", {
+    className: "overflow-x-auto -mx-1 px-1",
+    style: {
+      WebkitOverflowScrolling: "touch"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "heatmap-grid mb-1",
+    style: {
+      gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 1fr))"
+    }
+  }, /*#__PURE__*/React.createElement("div", null), sliced.map((d, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    className: "heatmap-date"
+  }, sliced.length <= 14 ? formatShortDate(d.date).split(" ")[0] : new Date(d.date + "T12:00:00").getDate()))), groups.map((group, gi) => /*#__PURE__*/React.createElement(React.Fragment, {
+    key: group.label
+  }, gi > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "h-2"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1 pl-1"
+  }, group.label), group.keys.map(k => {
+    const isMaxType = OBJECTIVES[k] && OBJECTIVES[k].type === "maximum";
+    return /*#__PURE__*/React.createElement("div", {
+      key: k,
+      className: "heatmap-grid mb-0.5",
+      style: {
+        gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 1fr))"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "heatmap-label text-on-surface-variant"
+    }, NUTRIENT_LABELS[k]), heatmapData[k].map((cell, ci) => /*#__PURE__*/React.createElement("div", {
+      key: ci,
+      className: "heatmap-cell cursor-pointer",
+      style: {
+        backgroundColor: heatmapColor(cell.pct, isDark, isMaxType)
+      },
+      onClick: () => setSelectedCell(selectedCell && selectedCell.key === k && selectedCell.date === cell.date ? null : {
+        key: k,
+        value: cell.value,
+        date: cell.date,
+        pct: cell.pct
+      }),
+      title: NUTRIENT_LABELS[k] + ": " + fmtVal(k, cell.value)
+    })));
+  })))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-center gap-2 text-[10px] text-on-surface-variant pt-1"
+  }, /*#__PURE__*/React.createElement("span", null, "Less"), [0, 25, 50, 75, 100].map(p => /*#__PURE__*/React.createElement("div", {
+    key: p,
+    className: "w-3.5 h-3.5 rounded-sm",
+    style: {
+      backgroundColor: heatmapColor(p, isDark, false)
+    }
+  })), /*#__PURE__*/React.createElement("span", null, "More"))));
+}
+
+// ============================================================
 // SettingsScreen
 // ============================================================
 function SettingsScreen() {
@@ -1396,7 +1695,7 @@ function App() {
   return /*#__PURE__*/React.createElement(NutritionProvider, null, /*#__PURE__*/React.createElement(ToastProvider, null, /*#__PURE__*/React.createElement(AppHeader, null), activeTab === "home" && /*#__PURE__*/React.createElement(HomeScreen, {
     onOpenLog: () => setShowLogSheet(true),
     onTabChange: handleTabChange
-  }), activeTab === "dashboard" && /*#__PURE__*/React.createElement(DashboardScreen, null), activeTab === "settings" && /*#__PURE__*/React.createElement(SettingsScreen, null), showLogSheet && /*#__PURE__*/React.createElement(LogDaySheet, {
+  }), activeTab === "dashboard" && /*#__PURE__*/React.createElement(DashboardScreen, null), activeTab === "insights" && /*#__PURE__*/React.createElement(InsightsScreen, null), activeTab === "settings" && /*#__PURE__*/React.createElement(SettingsScreen, null), showLogSheet && /*#__PURE__*/React.createElement(LogDaySheet, {
     onClose: () => setShowLogSheet(false)
   }), /*#__PURE__*/React.createElement(Toast, null), /*#__PURE__*/React.createElement(BottomNav, {
     activeTab: activeTab,

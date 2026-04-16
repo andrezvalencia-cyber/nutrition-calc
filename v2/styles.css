@@ -292,3 +292,41 @@ input[type="number"] {
   .dark .glass-card         { background: rgba(28, 30, 38, 0.96); }
   .dark .liquid-glass-light { background: rgba(30, 32, 38, 0.96); }
 }
+
+/* ---- Heatmap ---- */
+.heatmap-grid {
+  display: grid;
+  gap: 2px;
+}
+
+.heatmap-cell {
+  border-radius: 4px;
+  aspect-ratio: 1;
+  min-width: 20px;
+  position: relative;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.heatmap-cell:hover {
+  outline: 2px solid rgba(var(--color-ring-bg), 0.3);
+  outline-offset: -1px;
+  z-index: 1;
+}
+
+.heatmap-label {
+  font-size: 11px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  padding-right: 8px;
+  min-width: 72px;
+  max-width: 72px;
+}
+
+.heatmap-date {
+  font-size: 9px;
+  text-align: center;
+  color: rgb(var(--color-on-surface-variant));
+  padding-bottom: 4px;
+}
