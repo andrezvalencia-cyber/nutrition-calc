@@ -14,7 +14,7 @@
     const NutritionContext = createContext(null);
 
     function NutritionProvider({ children }) {
-      const [state, setStateRaw] = useState(() => loadState() || { ...DEFAULT_STATE });
+      const [state, setStateRaw] = useState(() => { const saved = loadState(); return saved ? { ...DEFAULT_STATE, ...saved } : { ...DEFAULT_STATE }; });
       const [apiKey, setApiKeyRaw] = useState(() => {
         try { return localStorage.getItem(API_KEY_STORAGE) || ""; } catch { return ""; }
       });
