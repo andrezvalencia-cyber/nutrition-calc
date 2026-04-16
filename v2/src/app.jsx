@@ -1278,7 +1278,7 @@
               {/* Date headers */}
               <div
                 className="heatmap-grid mb-1"
-                style={{ gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 1fr))" }}
+                style={{ gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))" }}
               >
                 <div></div>
                 {sliced.map((d, i) => (
@@ -1303,7 +1303,7 @@
                       <div
                         key={k}
                         className="heatmap-grid mb-0.5"
-                        style={{ gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 1fr))" }}
+                        style={{ gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))" }}
                       >
                         <div className="heatmap-label text-on-surface-variant">
                           {NUTRIENT_LABELS[k]}

@@ -1415,7 +1415,7 @@ function InsightsScreen() {
   }, /*#__PURE__*/React.createElement("div", {
     className: "heatmap-grid mb-1",
     style: {
-      gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 1fr))"
+      gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))"
     }
   }, /*#__PURE__*/React.createElement("div", null), sliced.map((d, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
@@ -1432,7 +1432,7 @@ function InsightsScreen() {
       key: k,
       className: "heatmap-grid mb-0.5",
       style: {
-        gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 1fr))"
+        gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))"
       }
     }, /*#__PURE__*/React.createElement("div", {
       className: "heatmap-label text-on-surface-variant"
