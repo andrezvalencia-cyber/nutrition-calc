@@ -1158,9 +1158,9 @@
       }
 
       const groups = [
-        { label: "Macros", keys: MACRO_KEYS, accent: "blue" },
-        { label: "Vitamins", keys: VITAMIN_KEYS, accent: "purple" },
-        { label: "Minerals", keys: MINERAL_KEYS, accent: "green" },
+        { label: "Macros", keys: MACRO_KEYS },
+        { label: "Vitamins", keys: VITAMIN_KEYS },
+        { label: "Minerals", keys: MINERAL_KEYS },
       ];
 
       return (

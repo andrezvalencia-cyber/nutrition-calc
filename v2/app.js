@@ -1316,16 +1316,13 @@ function InsightsScreen() {
   }
   const groups = [{
     label: "Macros",
-    keys: MACRO_KEYS,
-    accent: "blue"
+    keys: MACRO_KEYS
   }, {
     label: "Vitamins",
-    keys: VITAMIN_KEYS,
-    accent: "purple"
+    keys: VITAMIN_KEYS
   }, {
     label: "Minerals",
-    keys: MINERAL_KEYS,
-    accent: "green"
+    keys: MINERAL_KEYS
   }];
   return /*#__PURE__*/React.createElement("div", {
     className: "pt-20 pb-28 px-4 space-y-6"
