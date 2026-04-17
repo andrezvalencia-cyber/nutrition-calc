@@ -134,6 +134,43 @@ test('quick entry caps outbound prompt content at MAX_QUICK_TEXT', async ({ page
   expect(capturedBody.messages[0].content.length).toBeLessThanOrEqual(MAX);
 });
 
+// ── Performance: heatmap render stays under 1s with 30 days seeded ───────────
+
+test('insights heatmap renders in under 1s with 30 days of history', async ({ page }) => {
+  const ZERO = {
+    protein: 0, carbs: 0, fat: 0, fiber: 0, sat_fat: 0, epa_dha: 0,
+    calcium: 0, iron: 0, zinc: 0, vit_d: 0, vit_e: 0, b12: 0,
+    folate: 0, vit_c: 0, potassium: 0, magnesium: 0,
+  };
+  await page.addInitScript((zero) => {
+    const days = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      const totals = {};
+      Object.keys(zero).forEach((k) => { totals[k] = Math.random() * 200; });
+      return { date: d, totals, gapsClosed: Math.floor(Math.random() * 16), energy: 3, digestion: 3 };
+    });
+    localStorage.setItem('nutrition_calc_v2', JSON.stringify({
+      currentDate: new Date().toISOString().slice(0, 10),
+      dayLog: [],
+      fatSolubleCarryover: { b12: 0, vit_e: 0, vit_d: 0 },
+      carryoverDaysRemaining: { b12: 0, vit_e: 0 },
+      dayHistory: days,
+      themeMode: 'dark',
+      aiModel: 'claude-sonnet-4-6',
+    }));
+  }, ZERO);
+
+  await page.goto('/');
+  await page.waitForSelector('nav button', { timeout: 8000 });
+  // Insights tab is the third nav button (Home, Dashboard, Insights, Settings).
+  const navButtons = page.locator('nav button');
+  const t0 = Date.now();
+  await navButtons.nth(2).click();
+  await page.waitForSelector('[data-testid="nutrient-heatmap"]', { timeout: 2000 });
+  const elapsed = Date.now() - t0;
+  expect(elapsed).toBeLessThan(1000);
+});
+
 // ── Security regression: React UMD pinned + SRI ──────────────────────────────
 
 test('unpkg <script> tags are pinned and carry SRI integrity', async ({ page }) => {

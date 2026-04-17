@@ -22,9 +22,44 @@
       const setState = useCallback((updater) => {
         setStateRaw((prev) => {
           const next = typeof updater === "function" ? updater(prev) : updater;
-          saveState(next);
           return next;
         });
+      }, []);
+
+      // Persist state off the keystroke path: debounce 250ms and flush on unmount.
+      const saveTimerRef = useRef(null);
+      const latestStateRef = useRef(state);
+      const didMountRef = useRef(false);
+      useEffect(() => { latestStateRef.current = state; }, [state]);
+      useEffect(() => {
+        if (!didMountRef.current) { didMountRef.current = true; return; }
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => {
+          saveTimerRef.current = null;
+          saveState(latestStateRef.current);
+        }, 250);
+        return () => {
+          if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+          }
+        };
+      }, [state]);
+      useEffect(() => {
+        const flush = () => {
+          if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+            saveState(latestStateRef.current);
+          }
+        };
+        window.addEventListener("pagehide", flush);
+        window.addEventListener("beforeunload", flush);
+        return () => {
+          window.removeEventListener("pagehide", flush);
+          window.removeEventListener("beforeunload", flush);
+          flush();
+        };
       }, []);
 
       // Apply theme mode to <html> classList
@@ -302,6 +337,7 @@
       const gaps = useMemo(() => getOpenGaps(runningTotals), [runningTotals]);
 
       const handleAIEstimate = async () => {
+        if (aiLoading) return;
         if (!quickText.trim()) return;
         if (!apiKey) {
           showToast({ text: "Set your Claude API key in Settings first" });
@@ -1084,6 +1120,11 @@
 
       const sliced = useMemo(() => days.slice(-range), [days, range]);
 
+      const heatmapGridStyle = useMemo(
+        () => ({ gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))" }),
+        [sliced.length]
+      );
+
       // Report card stats
       const stats = useMemo(() => {
         if (sliced.length === 0) return null;
@@ -1126,15 +1167,22 @@
         ];
         groups.forEach(g => {
           g.keys.forEach(k => {
+            const isMaxType = OBJECTIVES[k] && OBJECTIVES[k].type === "maximum";
             data[k] = sliced.map(d => {
               const val = d.totals[k] || 0;
               const s = getStatus(k, val);
-              return { pct: s.pct, value: val, date: d.date, closed: s.closed };
+              return {
+                pct: s.pct,
+                value: val,
+                date: d.date,
+                closed: s.closed,
+                color: heatmapColor(s.pct, isDark, isMaxType),
+              };
             });
           });
         });
         return data;
-      }, [sliced]);
+      }, [sliced, isDark]);
 
       const formatShortDate = (dateStr) => {
         const d = new Date(dateStr + "T12:00:00");
@@ -1274,11 +1322,11 @@
             )}
 
             {/* Heatmap Grid */}
-            <div className="overflow-x-auto -mx-1 px-1" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div data-testid="nutrient-heatmap" className="overflow-x-auto -mx-1 px-1" style={{ WebkitOverflowScrolling: "touch" }}>
               {/* Date headers */}
               <div
                 className="heatmap-grid mb-1"
-                style={{ gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))" }}
+                style={heatmapGridStyle}
               >
                 <div></div>
                 {sliced.map((d, i) => (
@@ -1298,12 +1346,11 @@
                     {group.label}
                   </div>
                   {group.keys.map(k => {
-                    const isMaxType = OBJECTIVES[k] && OBJECTIVES[k].type === "maximum";
                     return (
                       <div
                         key={k}
                         className="heatmap-grid mb-0.5"
-                        style={{ gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))" }}
+                        style={heatmapGridStyle}
                       >
                         <div className="heatmap-label text-on-surface-variant">
                           {NUTRIENT_LABELS[k]}
@@ -1312,7 +1359,7 @@
                           <div
                             key={ci}
                             className="heatmap-cell cursor-pointer"
-                            style={{ backgroundColor: heatmapColor(cell.pct, isDark, isMaxType) }}
+                            style={{ backgroundColor: cell.color }}
                             onClick={() => setSelectedCell(
                               selectedCell && selectedCell.key === k && selectedCell.date === cell.date
                                 ? null

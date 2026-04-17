@@ -53,9 +53,49 @@ function NutritionProvider({
   const setState = useCallback(updater => {
     setStateRaw(prev => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      saveState(next);
       return next;
     });
+  }, []);
+
+  // Persist state off the keystroke path: debounce 250ms and flush on unmount.
+  const saveTimerRef = useRef(null);
+  const latestStateRef = useRef(state);
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    latestStateRef.current = state;
+  }, [state]);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      saveState(latestStateRef.current);
+    }, 250);
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
+  }, [state]);
+  useEffect(() => {
+    const flush = () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+        saveState(latestStateRef.current);
+      }
+    };
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("beforeunload", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("beforeunload", flush);
+      flush();
+    };
   }, []);
 
   // Apply theme mode to <html> classList
@@ -432,6 +472,7 @@ function HomeScreen({
   const [aiLoading, setAiLoading] = useState(false);
   const gaps = useMemo(() => getOpenGaps(runningTotals), [runningTotals]);
   const handleAIEstimate = async () => {
+    if (aiLoading) return;
     if (!quickText.trim()) return;
     if (!apiKey) {
       showToast({
@@ -1233,6 +1274,9 @@ function InsightsScreen() {
     return hist;
   }, [state.dayHistory, state.dayLog, state.currentDate, runningTotals, gapsClosed]);
   const sliced = useMemo(() => days.slice(-range), [days, range]);
+  const heatmapGridStyle = useMemo(() => ({
+    gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))"
+  }), [sliced.length]);
 
   // Report card stats
   const stats = useMemo(() => {
@@ -1284,6 +1328,7 @@ function InsightsScreen() {
     }];
     groups.forEach(g => {
       g.keys.forEach(k => {
+        const isMaxType = OBJECTIVES[k] && OBJECTIVES[k].type === "maximum";
         data[k] = sliced.map(d => {
           const val = d.totals[k] || 0;
           const s = getStatus(k, val);
@@ -1291,13 +1336,14 @@ function InsightsScreen() {
             pct: s.pct,
             value: val,
             date: d.date,
-            closed: s.closed
+            closed: s.closed,
+            color: heatmapColor(s.pct, isDark, isMaxType)
           };
         });
       });
     });
     return data;
-  }, [sliced]);
+  }, [sliced, isDark]);
   const formatShortDate = dateStr => {
     const d = new Date(dateStr + "T12:00:00");
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -1414,15 +1460,14 @@ function InsightsScreen() {
   }, fmtVal(selectedCell.key, selectedCell.value), " / ", getTargetStr(selectedCell.key))), /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-on-surface-variant"
   }, formatShortDate(selectedCell.date))), /*#__PURE__*/React.createElement("div", {
+    "data-testid": "nutrient-heatmap",
     className: "overflow-x-auto -mx-1 px-1",
     style: {
       WebkitOverflowScrolling: "touch"
     }
   }, /*#__PURE__*/React.createElement("div", {
     className: "heatmap-grid mb-1",
-    style: {
-      gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))"
-    }
+    style: heatmapGridStyle
   }, /*#__PURE__*/React.createElement("div", null), sliced.map((d, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     className: "heatmap-date"
@@ -1433,20 +1478,17 @@ function InsightsScreen() {
   }), /*#__PURE__*/React.createElement("div", {
     className: "text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1 pl-1"
   }, group.label), group.keys.map(k => {
-    const isMaxType = OBJECTIVES[k] && OBJECTIVES[k].type === "maximum";
     return /*#__PURE__*/React.createElement("div", {
       key: k,
       className: "heatmap-grid mb-0.5",
-      style: {
-        gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))"
-      }
+      style: heatmapGridStyle
     }, /*#__PURE__*/React.createElement("div", {
       className: "heatmap-label text-on-surface-variant"
     }, NUTRIENT_LABELS[k]), heatmapData[k].map((cell, ci) => /*#__PURE__*/React.createElement("div", {
       key: ci,
       className: "heatmap-cell cursor-pointer",
       style: {
-        backgroundColor: heatmapColor(cell.pct, isDark, isMaxType)
+        backgroundColor: cell.color
       },
       onClick: () => setSelectedCell(selectedCell && selectedCell.key === k && selectedCell.date === cell.date ? null : {
         key: k,
