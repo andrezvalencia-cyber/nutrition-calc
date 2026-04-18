@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-04-18T12:51:47.275Z",
+  "timestamp": "2026-04-18T13:18:42.402Z",
   "url": "http://localhost:8765/",
-  "runs": 5,
+  "runs": 7,
   "throttle": {
     "offline": false,
     "downloadThroughput": 209715.2,
@@ -12,73 +12,97 @@
     "cold": {
       "raw": [
         {
-          "fcp": 1348,
+          "fcp": 1276,
           "lcp": null,
-          "domInteractive": 1299.0999999999767,
-          "domContentLoadedEventEnd": 1299.1999999999534,
-          "loadEventEnd": 20670.199999999953,
+          "domInteractive": 1187.2999999999884,
+          "domContentLoadedEventEnd": 1187.2999999999884,
+          "loadEventEnd": 20486.399999999994,
           "tbt": 0,
           "longtaskCount": 0,
-          "transferBytes": 35179,
+          "transferBytes": 35375,
           "resourceCount": 10,
-          "wallTimeMs": 22200
+          "wallTimeMs": 22070
         },
         {
-          "fcp": 1320,
+          "fcp": 1252,
           "lcp": null,
-          "domInteractive": 1270.2999999999302,
-          "domContentLoadedEventEnd": 1270.2999999999302,
-          "loadEventEnd": 20610.29999999993,
+          "domInteractive": 1172.3999999999942,
+          "domContentLoadedEventEnd": 1172.5,
+          "loadEventEnd": 20436.5,
           "tbt": 0,
           "longtaskCount": 0,
-          "transferBytes": 35179,
+          "transferBytes": 35375,
           "resourceCount": 10,
-          "wallTimeMs": 22138
+          "wallTimeMs": 21986
         },
         {
-          "fcp": 1356,
+          "fcp": 1380,
           "lcp": null,
-          "domInteractive": 1300.9000000000233,
-          "domContentLoadedEventEnd": 1301,
-          "loadEventEnd": 20648.099999999977,
+          "domInteractive": 1295.1000000000058,
+          "domContentLoadedEventEnd": 1295.1999999999825,
+          "loadEventEnd": 20574,
           "tbt": 0,
           "longtaskCount": 0,
-          "transferBytes": 35179,
+          "transferBytes": 35375,
           "resourceCount": 10,
-          "wallTimeMs": 22172
+          "wallTimeMs": 22118
         },
         {
-          "fcp": 1304,
+          "fcp": 1280,
           "lcp": null,
-          "domInteractive": 1268.2999999999302,
-          "domContentLoadedEventEnd": 1268.2999999999302,
-          "loadEventEnd": 20636.199999999953,
+          "domInteractive": 1201.2000000000116,
+          "domContentLoadedEventEnd": 1201.2000000000116,
+          "loadEventEnd": 20468.600000000006,
           "tbt": 0,
           "longtaskCount": 0,
-          "transferBytes": 35179,
+          "transferBytes": 35375,
           "resourceCount": 10,
-          "wallTimeMs": 22152
+          "wallTimeMs": 22001
         },
         {
-          "fcp": 1300,
+          "fcp": 1264,
           "lcp": null,
-          "domInteractive": 1258.5,
-          "domContentLoadedEventEnd": 1258.5999999999767,
-          "loadEventEnd": 20616.099999999977,
+          "domInteractive": 1187.2000000000116,
+          "domContentLoadedEventEnd": 1187.2000000000116,
+          "loadEventEnd": 20461.900000000023,
           "tbt": 0,
           "longtaskCount": 0,
-          "transferBytes": 35179,
+          "transferBytes": 35375,
           "resourceCount": 10,
-          "wallTimeMs": 22136
+          "wallTimeMs": 22006
+        },
+        {
+          "fcp": 1256,
+          "lcp": null,
+          "domInteractive": 1180.2000000000116,
+          "domContentLoadedEventEnd": 1180.3000000000466,
+          "loadEventEnd": 20450.900000000023,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35375,
+          "resourceCount": 10,
+          "wallTimeMs": 21990
+        },
+        {
+          "fcp": 1248,
+          "lcp": null,
+          "domInteractive": 1172.3000000000466,
+          "domContentLoadedEventEnd": 1172.4000000000233,
+          "loadEventEnd": 20442.600000000035,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35375,
+          "resourceCount": 10,
+          "wallTimeMs": 21988
         }
       ],
       "summary": {
         "fcp": {
-          "median": 1320,
-          "p75": 1348,
-          "min": 1300,
-          "max": 1356,
-          "n": 5
+          "median": 1264,
+          "p75": 1280,
+          "min": 1248,
+          "max": 1380,
+          "n": 7
         },
         "lcp": {
           "median": null,
@@ -88,112 +112,136 @@
           "n": 0
         },
         "domInteractive": {
-          "median": 1270.3,
-          "p75": 1299.1,
-          "min": 1258.5,
-          "max": 1300.9,
-          "n": 5
+          "median": 1187.2,
+          "p75": 1201.2,
+          "min": 1172.3,
+          "max": 1295.1,
+          "n": 7
         },
         "domContentLoadedEventEnd": {
-          "median": 1270.3,
-          "p75": 1299.2,
-          "min": 1258.6,
-          "max": 1301,
-          "n": 5
+          "median": 1187.2,
+          "p75": 1201.2,
+          "min": 1172.4,
+          "max": 1295.2,
+          "n": 7
         },
         "loadEventEnd": {
-          "median": 20636.2,
-          "p75": 20648.1,
-          "min": 20610.3,
-          "max": 20670.2,
-          "n": 5
+          "median": 20461.9,
+          "p75": 20486.4,
+          "min": 20436.5,
+          "max": 20574,
+          "n": 7
         },
         "tbt": {
           "median": 0,
           "p75": 0,
           "min": 0,
           "max": 0,
-          "n": 5
+          "n": 7
         },
         "transferBytes": {
-          "median": 35179,
-          "p75": 35179,
-          "min": 35179,
-          "max": 35179,
-          "n": 5
+          "median": 35375,
+          "p75": 35375,
+          "min": 35375,
+          "max": 35375,
+          "n": 7
         }
       }
     },
     "warm": {
       "raw": [
         {
-          "fcp": 1308,
+          "fcp": 1260,
           "lcp": null,
-          "domInteractive": 1263.5999999999767,
-          "domContentLoadedEventEnd": 1263.6999999999534,
-          "loadEventEnd": 20599.400000000023,
+          "domInteractive": 1187.7999999999884,
+          "domContentLoadedEventEnd": 1187.7999999999884,
+          "loadEventEnd": 20469,
           "tbt": 0,
           "longtaskCount": 0,
-          "transferBytes": 35179,
+          "transferBytes": 35375,
           "resourceCount": 10,
-          "wallTimeMs": 22118
+          "wallTimeMs": 22004
         },
         {
-          "fcp": 1304,
+          "fcp": 1272,
           "lcp": null,
-          "domInteractive": 1252.6999999999534,
-          "domContentLoadedEventEnd": 1252.6999999999534,
-          "loadEventEnd": 20599.399999999907,
+          "domInteractive": 1188.8000000000466,
+          "domContentLoadedEventEnd": 1188.8000000000466,
+          "loadEventEnd": 20461.100000000035,
           "tbt": 0,
           "longtaskCount": 0,
-          "transferBytes": 35179,
+          "transferBytes": 35375,
           "resourceCount": 10,
-          "wallTimeMs": 22117
+          "wallTimeMs": 22001
         },
         {
-          "fcp": 1316,
+          "fcp": 1264,
           "lcp": null,
-          "domInteractive": 1259.8000000000466,
-          "domContentLoadedEventEnd": 1259.9000000000233,
-          "loadEventEnd": 20602.900000000023,
+          "domInteractive": 1181.4000000000233,
+          "domContentLoadedEventEnd": 1181.4000000000233,
+          "loadEventEnd": 20448.100000000035,
           "tbt": 0,
           "longtaskCount": 0,
-          "transferBytes": 35179,
+          "transferBytes": 35375,
           "resourceCount": 10,
-          "wallTimeMs": 22119
+          "wallTimeMs": 21987
         },
         {
-          "fcp": 1332,
+          "fcp": 1268,
           "lcp": null,
-          "domInteractive": 1279.0999999999767,
-          "domContentLoadedEventEnd": 1279.1999999999534,
-          "loadEventEnd": 20623,
+          "domInteractive": 1187.9000000000233,
+          "domContentLoadedEventEnd": 1188,
+          "loadEventEnd": 20471.100000000035,
           "tbt": 0,
           "longtaskCount": 0,
-          "transferBytes": 35179,
+          "transferBytes": 35375,
           "resourceCount": 10,
-          "wallTimeMs": 22146
+          "wallTimeMs": 22010
         },
         {
-          "fcp": 1312,
+          "fcp": 1264,
           "lcp": null,
-          "domInteractive": 1260.5,
-          "domContentLoadedEventEnd": 1260.5,
-          "loadEventEnd": 20605.800000000047,
+          "domInteractive": 1181,
+          "domContentLoadedEventEnd": 1181.0999999999767,
+          "loadEventEnd": 20447.599999999977,
           "tbt": 0,
           "longtaskCount": 0,
-          "transferBytes": 35179,
+          "transferBytes": 35375,
           "resourceCount": 10,
-          "wallTimeMs": 22126
+          "wallTimeMs": 21989
+        },
+        {
+          "fcp": 1268,
+          "lcp": null,
+          "domInteractive": 1181.2000000000116,
+          "domContentLoadedEventEnd": 1181.2000000000116,
+          "loadEventEnd": 20461.600000000035,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35375,
+          "resourceCount": 10,
+          "wallTimeMs": 22010
+        },
+        {
+          "fcp": 1256,
+          "lcp": null,
+          "domInteractive": 1173.7999999999884,
+          "domContentLoadedEventEnd": 1173.9000000000233,
+          "loadEventEnd": 20439.5,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35375,
+          "resourceCount": 10,
+          "wallTimeMs": 21974
         }
       ],
       "summary": {
         "fcp": {
-          "median": 1312,
-          "p75": 1316,
-          "min": 1304,
-          "max": 1332,
-          "n": 5
+          "median": 1264,
+          "p75": 1268,
+          "min": 1256,
+          "max": 1272,
+          "n": 7
         },
         "lcp": {
           "median": null,
@@ -203,39 +251,39 @@
           "n": 0
         },
         "domInteractive": {
-          "median": 1260.5,
-          "p75": 1263.6,
-          "min": 1252.7,
-          "max": 1279.1,
-          "n": 5
+          "median": 1181.4,
+          "p75": 1187.9,
+          "min": 1173.8,
+          "max": 1188.8,
+          "n": 7
         },
         "domContentLoadedEventEnd": {
-          "median": 1260.5,
-          "p75": 1263.7,
-          "min": 1252.7,
-          "max": 1279.2,
-          "n": 5
+          "median": 1181.4,
+          "p75": 1188,
+          "min": 1173.9,
+          "max": 1188.8,
+          "n": 7
         },
         "loadEventEnd": {
-          "median": 20602.9,
-          "p75": 20605.8,
-          "min": 20599.4,
-          "max": 20623,
-          "n": 5
+          "median": 20461.1,
+          "p75": 20469,
+          "min": 20439.5,
+          "max": 20471.1,
+          "n": 7
         },
         "tbt": {
           "median": 0,
           "p75": 0,
           "min": 0,
           "max": 0,
-          "n": 5
+          "n": 7
         },
         "transferBytes": {
-          "median": 35179,
-          "p75": 35179,
-          "min": 35179,
-          "max": 35179,
-          "n": 5
+          "median": 35375,
+          "p75": 35375,
+          "min": 35375,
+          "max": 35375,
+          "n": 7
         }
       }
     }
@@ -244,56 +292,68 @@
     "cold": {
       "raw": [
         {
-          "clickToPaintMs": 32.300000000046566
+          "clickToPaintMs": 72.09999999997672
         },
         {
-          "clickToPaintMs": 22.70000000006985
+          "clickToPaintMs": 82.10000000009313
         },
         {
-          "clickToPaintMs": 21.600000000093132
+          "clickToPaintMs": 61.10000000009313
         },
         {
-          "clickToPaintMs": 18.100000000093132
+          "clickToPaintMs": 73.79999999993015
         },
         {
-          "clickToPaintMs": 18.099999999976717
+          "clickToPaintMs": 80.60000000009313
+        },
+        {
+          "clickToPaintMs": 65.90000000002328
+        },
+        {
+          "clickToPaintMs": 66.79999999993015
         }
       ],
       "summary": {
         "clickToPaintMs": {
-          "median": 21.6,
-          "p75": 22.7,
-          "min": 18.1,
-          "max": 32.3,
-          "n": 5
+          "median": 72.1,
+          "p75": 80.6,
+          "min": 61.1,
+          "max": 82.1,
+          "n": 7
         }
       }
     },
     "warm": {
       "raw": [
         {
-          "clickToPaintMs": 23.900000000023283
+          "clickToPaintMs": 69.79999999993015
         },
         {
-          "clickToPaintMs": 25.5
+          "clickToPaintMs": 73.70000000006985
         },
         {
-          "clickToPaintMs": 25.699999999953434
+          "clickToPaintMs": 64.5
         },
         {
-          "clickToPaintMs": 22.5
+          "clickToPaintMs": 83.5
         },
         {
-          "clickToPaintMs": 33.09999999997672
+          "clickToPaintMs": 64.80000000004657
+        },
+        {
+          "clickToPaintMs": 76.5
+        },
+        {
+          "clickToPaintMs": 80.39999999990687
         }
       ],
       "summary": {
         "clickToPaintMs": {
-          "median": 25.5,
-          "p75": 25.7,
-          "min": 22.5,
-          "max": 33.1,
-          "n": 5
+          "median": 73.7,
+          "p75": 80.4,
+          "min": 64.5,
+          "max": 83.5,
+          "n": 7
         }
       }
     }
