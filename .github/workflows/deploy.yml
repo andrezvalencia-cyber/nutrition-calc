@@ -15,7 +15,53 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  perf-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install v2 dependencies
+        working-directory: v2
+        run: npm install
+
+      - name: Install Playwright browsers
+        working-directory: v2
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Tailwind CSS
+        working-directory: v2
+        run: npx tailwindcss -i input.css -o tailwind-out.css --minify
+
+      - name: Compile JSX (v2)
+        working-directory: v2
+        run: npm run build
+
+      - name: Start static server
+        working-directory: v2
+        run: npx serve -p 8765 >/tmp/serve.log 2>&1 &
+
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 20); do
+            curl -sSf http://localhost:8765/ >/dev/null && exit 0
+            sleep 0.5
+          done
+          echo "Server failed to start" && cat /tmp/serve.log && exit 1
+
+      - name: Run perf compare
+        working-directory: v2
+        env:
+          PERF_RUNS: "7"
+        run: node tests/perf-benchmark.js --compare
+
   deploy:
+    needs: perf-gate
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

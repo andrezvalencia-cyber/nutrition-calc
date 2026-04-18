@@ -1,0 +1,301 @@
+{
+  "timestamp": "2026-04-18T12:51:47.275Z",
+  "url": "http://localhost:8765/",
+  "runs": 5,
+  "throttle": {
+    "offline": false,
+    "downloadThroughput": 209715.2,
+    "uploadThroughput": 96000,
+    "latency": 150
+  },
+  "home": {
+    "cold": {
+      "raw": [
+        {
+          "fcp": 1348,
+          "lcp": null,
+          "domInteractive": 1299.0999999999767,
+          "domContentLoadedEventEnd": 1299.1999999999534,
+          "loadEventEnd": 20670.199999999953,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35179,
+          "resourceCount": 10,
+          "wallTimeMs": 22200
+        },
+        {
+          "fcp": 1320,
+          "lcp": null,
+          "domInteractive": 1270.2999999999302,
+          "domContentLoadedEventEnd": 1270.2999999999302,
+          "loadEventEnd": 20610.29999999993,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35179,
+          "resourceCount": 10,
+          "wallTimeMs": 22138
+        },
+        {
+          "fcp": 1356,
+          "lcp": null,
+          "domInteractive": 1300.9000000000233,
+          "domContentLoadedEventEnd": 1301,
+          "loadEventEnd": 20648.099999999977,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35179,
+          "resourceCount": 10,
+          "wallTimeMs": 22172
+        },
+        {
+          "fcp": 1304,
+          "lcp": null,
+          "domInteractive": 1268.2999999999302,
+          "domContentLoadedEventEnd": 1268.2999999999302,
+          "loadEventEnd": 20636.199999999953,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35179,
+          "resourceCount": 10,
+          "wallTimeMs": 22152
+        },
+        {
+          "fcp": 1300,
+          "lcp": null,
+          "domInteractive": 1258.5,
+          "domContentLoadedEventEnd": 1258.5999999999767,
+          "loadEventEnd": 20616.099999999977,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35179,
+          "resourceCount": 10,
+          "wallTimeMs": 22136
+        }
+      ],
+      "summary": {
+        "fcp": {
+          "median": 1320,
+          "p75": 1348,
+          "min": 1300,
+          "max": 1356,
+          "n": 5
+        },
+        "lcp": {
+          "median": null,
+          "p75": null,
+          "min": null,
+          "max": null,
+          "n": 0
+        },
+        "domInteractive": {
+          "median": 1270.3,
+          "p75": 1299.1,
+          "min": 1258.5,
+          "max": 1300.9,
+          "n": 5
+        },
+        "domContentLoadedEventEnd": {
+          "median": 1270.3,
+          "p75": 1299.2,
+          "min": 1258.6,
+          "max": 1301,
+          "n": 5
+        },
+        "loadEventEnd": {
+          "median": 20636.2,
+          "p75": 20648.1,
+          "min": 20610.3,
+          "max": 20670.2,
+          "n": 5
+        },
+        "tbt": {
+          "median": 0,
+          "p75": 0,
+          "min": 0,
+          "max": 0,
+          "n": 5
+        },
+        "transferBytes": {
+          "median": 35179,
+          "p75": 35179,
+          "min": 35179,
+          "max": 35179,
+          "n": 5
+        }
+      }
+    },
+    "warm": {
+      "raw": [
+        {
+          "fcp": 1308,
+          "lcp": null,
+          "domInteractive": 1263.5999999999767,
+          "domContentLoadedEventEnd": 1263.6999999999534,
+          "loadEventEnd": 20599.400000000023,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35179,
+          "resourceCount": 10,
+          "wallTimeMs": 22118
+        },
+        {
+          "fcp": 1304,
+          "lcp": null,
+          "domInteractive": 1252.6999999999534,
+          "domContentLoadedEventEnd": 1252.6999999999534,
+          "loadEventEnd": 20599.399999999907,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35179,
+          "resourceCount": 10,
+          "wallTimeMs": 22117
+        },
+        {
+          "fcp": 1316,
+          "lcp": null,
+          "domInteractive": 1259.8000000000466,
+          "domContentLoadedEventEnd": 1259.9000000000233,
+          "loadEventEnd": 20602.900000000023,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35179,
+          "resourceCount": 10,
+          "wallTimeMs": 22119
+        },
+        {
+          "fcp": 1332,
+          "lcp": null,
+          "domInteractive": 1279.0999999999767,
+          "domContentLoadedEventEnd": 1279.1999999999534,
+          "loadEventEnd": 20623,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35179,
+          "resourceCount": 10,
+          "wallTimeMs": 22146
+        },
+        {
+          "fcp": 1312,
+          "lcp": null,
+          "domInteractive": 1260.5,
+          "domContentLoadedEventEnd": 1260.5,
+          "loadEventEnd": 20605.800000000047,
+          "tbt": 0,
+          "longtaskCount": 0,
+          "transferBytes": 35179,
+          "resourceCount": 10,
+          "wallTimeMs": 22126
+        }
+      ],
+      "summary": {
+        "fcp": {
+          "median": 1312,
+          "p75": 1316,
+          "min": 1304,
+          "max": 1332,
+          "n": 5
+        },
+        "lcp": {
+          "median": null,
+          "p75": null,
+          "min": null,
+          "max": null,
+          "n": 0
+        },
+        "domInteractive": {
+          "median": 1260.5,
+          "p75": 1263.6,
+          "min": 1252.7,
+          "max": 1279.1,
+          "n": 5
+        },
+        "domContentLoadedEventEnd": {
+          "median": 1260.5,
+          "p75": 1263.7,
+          "min": 1252.7,
+          "max": 1279.2,
+          "n": 5
+        },
+        "loadEventEnd": {
+          "median": 20602.9,
+          "p75": 20605.8,
+          "min": 20599.4,
+          "max": 20623,
+          "n": 5
+        },
+        "tbt": {
+          "median": 0,
+          "p75": 0,
+          "min": 0,
+          "max": 0,
+          "n": 5
+        },
+        "transferBytes": {
+          "median": 35179,
+          "p75": 35179,
+          "min": 35179,
+          "max": 35179,
+          "n": 5
+        }
+      }
+    }
+  },
+  "logOpen": {
+    "cold": {
+      "raw": [
+        {
+          "clickToPaintMs": 32.300000000046566
+        },
+        {
+          "clickToPaintMs": 22.70000000006985
+        },
+        {
+          "clickToPaintMs": 21.600000000093132
+        },
+        {
+          "clickToPaintMs": 18.100000000093132
+        },
+        {
+          "clickToPaintMs": 18.099999999976717
+        }
+      ],
+      "summary": {
+        "clickToPaintMs": {
+          "median": 21.6,
+          "p75": 22.7,
+          "min": 18.1,
+          "max": 32.3,
+          "n": 5
+        }
+      }
+    },
+    "warm": {
+      "raw": [
+        {
+          "clickToPaintMs": 23.900000000023283
+        },
+        {
+          "clickToPaintMs": 25.5
+        },
+        {
+          "clickToPaintMs": 25.699999999953434
+        },
+        {
+          "clickToPaintMs": 22.5
+        },
+        {
+          "clickToPaintMs": 33.09999999997672
+        }
+      ],
+      "summary": {
+        "clickToPaintMs": {
+          "median": 25.5,
+          "p75": 25.7,
+          "min": 22.5,
+          "max": 33.1,
+          "n": 5
+        }
+      }
+    }
+  }
+}

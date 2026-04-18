@@ -228,6 +228,65 @@ function printTable(label, summary, keys) {
   }
 }
 
+const COMPARE = process.argv.includes("--compare");
+const BASELINE_PATH = path.join(__dirname, "perf-baseline.json");
+
+// Thresholds: LCP p75 +15%, clickToPaintMs p75 +20%, TBT absolute +50ms, transferBytes +5%.
+const THRESHOLDS = {
+  "home.cold.lcp.p75":            { type: "pct",  limit: 0.15 },
+  "home.warm.lcp.p75":            { type: "pct",  limit: 0.15 },
+  "home.cold.tbt.p75":            { type: "abs",  limit: 50 },
+  "home.warm.tbt.p75":            { type: "abs",  limit: 50 },
+  "home.cold.transferBytes.p75":  { type: "pct",  limit: 0.05 },
+  "home.warm.transferBytes.p75":  { type: "pct",  limit: 0.05 },
+  "logOpen.cold.clickToPaintMs.p75": { type: "pct", limit: 0.20 },
+  "logOpen.warm.clickToPaintMs.p75": { type: "pct", limit: 0.20 },
+};
+
+function getAt(report, dottedPath) {
+  // e.g. "home.cold.lcp.p75" → report.home.cold.summary.lcp.p75
+  const parts = dottedPath.split(".");
+  const section = report[parts[0]];
+  if (!section) return null;
+  const bucket = section[parts[1]];
+  if (!bucket || !bucket.summary) return null;
+  const metric = bucket.summary[parts[2]];
+  if (!metric) return null;
+  return metric[parts[3]];
+}
+
+function compareAgainstBaseline(current) {
+  if (!fs.existsSync(BASELINE_PATH)) {
+    console.error(`No baseline at ${BASELINE_PATH} — run without --compare to create one.`);
+    process.exit(2);
+  }
+  const baseline = JSON.parse(fs.readFileSync(BASELINE_PATH, "utf8"));
+  const failures = [];
+  const notes = [];
+  for (const [metric, rule] of Object.entries(THRESHOLDS)) {
+    const base = getAt(baseline, metric);
+    const cur = getAt(current, metric);
+    if (cur == null) { notes.push(`${metric}: current=null (skipped)`); continue; }
+    if (base == null) { notes.push(`${metric}: baseline=null, current=${cur} (first-real-value, not gated)`); continue; }
+    let bad = false, detail = "";
+    if (rule.type === "pct") {
+      const delta = (cur - base) / (base || 1);
+      bad = delta > rule.limit;
+      detail = `${base} → ${cur} (${(delta * 100).toFixed(1)}% vs +${(rule.limit * 100).toFixed(0)}% limit)`;
+    } else {
+      const delta = cur - base;
+      bad = delta > rule.limit;
+      detail = `${base} → ${cur} (Δ${delta.toFixed(1)} vs +${rule.limit} limit)`;
+    }
+    (bad ? failures : notes).push(`${metric}: ${detail}`);
+  }
+  console.log("\n== Perf compare ==");
+  notes.forEach((n) => console.log("  ok   " + n));
+  failures.forEach((f) => console.log("  FAIL " + f));
+  if (failures.length) { console.error(`\nPerf regression: ${failures.length} metric(s) exceeded threshold.`); process.exit(1); }
+  console.log("\nNo perf regressions.");
+}
+
 (async () => {
   console.log(`Perf benchmark — ${RUNS} runs per config, Fast 3G throttling`);
   console.log(`URL: ${BASE_URL}`);
@@ -272,7 +331,11 @@ function printTable(label, summary, keys) {
   }
 
   await browser.close();
-  fs.writeFileSync(OUT_PATH, JSON.stringify(report, null, 2));
+  if (COMPARE) {
+    compareAgainstBaseline(report);
+  } else {
+    fs.writeFileSync(OUT_PATH, JSON.stringify(report, null, 2));
+  }
 
   console.log(`\n============================================================`);
   console.log(` SUMMARY — ${OUT_PATH}`);
