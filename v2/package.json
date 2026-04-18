@@ -7,7 +7,8 @@
     "build": "babel src/app.jsx -o app.js",
     "build:css": "tailwindcss -i input.css -o tailwind-out.css --minify",
     "test": "playwright test",
-    "test:headless": "playwright test --reporter=list"
+    "test:headless": "playwright test --reporter=list",
+    "perf": "node tests/perf-benchmark.js"
   },
   "keywords": [],
   "author": "",
