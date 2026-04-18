@@ -327,6 +327,26 @@
     }
 
     // ============================================================
+    // AISkeleton — renders inside the reserved food-log row shell
+    // ============================================================
+    function AISkeleton() {
+      return (
+        <div
+          data-testid="ai-skeleton"
+          aria-busy="true"
+          aria-label="Estimating nutrition"
+          className="liquid-glass rounded-2xl px-4 py-3 flex items-center gap-3 min-h-[4.5rem]"
+        >
+          <span className="shimmer-block w-8 h-8 rounded-full" />
+          <div className="flex-1 min-w-0 space-y-2">
+            <span className="shimmer-block block h-3 w-2/5 rounded" />
+            <span className="shimmer-block block h-2.5 w-3/5 rounded" />
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
     // HomeScreen
     // ============================================================
     function HomeScreen({ onOpenLog, onTabChange }) {
@@ -346,8 +366,14 @@
         setAiLoading(true);
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 15000);
+        const trimmed = quickText.slice(0, MAX_QUICK_TEXT);
+        const span = (typeof window !== "undefined" && window.__tracer)
+          ? window.__tracer.startSpan("ai.request", {
+              model: state.aiModel || "claude-sonnet-4-6",
+              "input.length": trimmed.length,
+            })
+          : null;
         try {
-          const trimmed = quickText.slice(0, MAX_QUICK_TEXT);
           const sysPrompt = `You are a nutrition estimation assistant. Given a food description, respond with ONLY a JSON object containing these 16 nutrient keys with numeric values (no text, no markdown): ${NUTRIENT_KEYS.join(", ")}. Units: protein/carbs/fat/fiber/sat_fat in g, epa_dha/calcium/iron/zinc/potassium/magnesium/vit_c in mg, vit_d in IU, vit_e in mg, b12 in mcg, folate in mcg. Estimate reasonable values for a single serving.`;
           const resp = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
@@ -390,9 +416,12 @@
           setState((s) => ({ ...s, dayLog: [...s.dayLog, entry] }));
           showToast({ text: `\uD83E\uDD16 ${entry.name}`, macros: nutrients, entryId });
           setQuickText("");
+          if (span) span.end("ok", { "http.status_code": resp.status });
         } catch (err) {
           showToast({ text: `AI error: ${err.message}` });
+          if (span) span.end("error", { "error.message": String(err && err.message || err).slice(0, 120) });
         } finally {
+          clearTimeout(timer);
           setAiLoading(false);
         }
       };
@@ -445,12 +474,13 @@
           </div>
 
           {/* Today's Meals */}
-          {state.dayLog.length > 0 && (
+          {(state.dayLog.length > 0 || aiLoading) && (
             <div className="space-y-3">
               <h2 className="font-headline text-lg font-bold">Today's Meals</h2>
-              <div className="space-y-2">
+              <div className="space-y-2 min-h-[4.5rem]">
+                {aiLoading && <AISkeleton />}
                 {state.dayLog.map((entry) => (
-                  <div key={entry.id} className="liquid-glass rounded-2xl px-4 py-3 flex items-center gap-3">
+                  <div key={entry.id} className="liquid-glass rounded-2xl px-4 py-3 flex items-center gap-3 min-h-[4.5rem]">
                     <span className="text-2xl">{entry.emoji}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{entry.name}</p>
@@ -1350,7 +1380,7 @@
             )}
 
             {/* Heatmap Grid */}
-            <div data-testid="nutrient-heatmap" className="overflow-x-auto -mx-1 px-1" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div data-testid="nutrient-heatmap" className="overflow-x-auto -mx-1 px-1 min-h-[18rem]" style={{ WebkitOverflowScrolling: "touch" }}>
               {/* Date headers */}
               <div
                 className="heatmap-grid mb-1"
@@ -1464,7 +1494,7 @@
             <h2 className="text-xs font-semibold text-on-surface-variant tracking-wide px-1 mb-2 font-label">Intelligence</h2>
             <div className="glass-card rounded-xl overflow-hidden">
               {/* API Key */}
-              <div className="px-4 py-3.5 flex items-center gap-3">
+              <div className="px-4 py-3.5 flex items-center gap-3 min-h-[3.5rem]">
                 <div className="w-9 h-9 rounded-xl bg-blue-600/20 flex items-center justify-center">
                   <Icon name="lock" size={18} className="text-blue-400" />
                 </div>

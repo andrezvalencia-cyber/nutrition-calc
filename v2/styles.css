@@ -330,3 +330,25 @@ input[type="number"] {
   color: rgb(var(--color-on-surface-variant));
   padding-bottom: 4px;
 }
+
+/* ---- AI Skeleton (Phase 3: zero-CLS passive waiting) ---- */
+.shimmer-block {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--color-on-surface), 0.06) 0%,
+    rgba(var(--color-on-surface), 0.14) 50%,
+    rgba(var(--color-on-surface), 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: ai-skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: 0.375rem;
+}
+
+@keyframes ai-skeleton-shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-block { animation: none; }
+}

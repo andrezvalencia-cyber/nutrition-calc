@@ -127,6 +127,116 @@ test('multi-select: two meals selected before Confirm produce two dayLog entries
   expect(ids).toContain('standard_dinner');
 });
 
+// ── Observability + layout stability (Phase 3/4) ─────────────────────────────
+
+async function seedKeyAndMockAI(page, { delayMs = 150 } = {}) {
+  await page.addInitScript(() => {
+    localStorage.setItem('nutrition_calc_v2_api_key', 'sk-ant-test-fake');
+  });
+  await page.route('https://api.anthropic.com/v1/messages', async (route) => {
+    await new Promise((r) => setTimeout(r, delayMs));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        content: [{
+          text: JSON.stringify({
+            protein: 1, carbs: 1, fat: 1, fiber: 1, sat_fat: 1,
+            epa_dha: 1, calcium: 1, iron: 1, zinc: 1, potassium: 1,
+            magnesium: 1, vit_c: 1, vit_d: 1, vit_e: 1, b12: 1, folate: 1,
+          }),
+        }],
+      }),
+    });
+  });
+}
+
+test('AI skeleton is visible while request is pending, removed after resolution', async ({ page }) => {
+  await seedKeyAndMockAI(page, { delayMs: 400 });
+  await page.goto('/');
+  await page.waitForSelector('input[placeholder="Describe what you ate..."]', { timeout: 8000 });
+
+  const input = page.locator('input[placeholder="Describe what you ate..."]');
+  await input.fill('test meal');
+  await input.press('Enter');
+
+  const skeleton = page.locator('[data-testid="ai-skeleton"]');
+  await expect(skeleton).toBeVisible({ timeout: 2000 });
+
+  // After resolution, skeleton should disappear and a real meal row is present.
+  await expect(skeleton).toBeHidden({ timeout: 5000 });
+});
+
+test('ai.request OTel span is emitted and contains no secrets or prompt text', async ({ page }) => {
+  const otelLines = [];
+  page.on('console', (msg) => {
+    const parts = msg.args();
+    // msg.text() concatenates args; look for the [otel] prefix.
+    const txt = msg.text();
+    if (txt.startsWith('[otel] ')) otelLines.push(txt.slice(7));
+  });
+
+  await seedKeyAndMockAI(page, { delayMs: 50 });
+  await page.goto('/');
+  await page.waitForSelector('input[placeholder="Describe what you ate..."]', { timeout: 8000 });
+
+  const input = page.locator('input[placeholder="Describe what you ate..."]');
+  await input.fill('secret-prompt-marker');
+  await input.press('Enter');
+
+  await page.waitForFunction(() => {
+    const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+    return (s.dayLog || []).length > 0;
+  }, null, { timeout: 5000 });
+
+  // Give the span one tick to flush.
+  await page.waitForTimeout(100);
+
+  expect(otelLines.length).toBeGreaterThanOrEqual(1);
+  const span = JSON.parse(otelLines[otelLines.length - 1]);
+  expect(span.name).toBe('ai.request');
+  expect(span.traceId).toMatch(/^[0-9a-f]{32}$/);
+  expect(span.spanId).toMatch(/^[0-9a-f]{16}$/);
+  expect(span.status.code).toBe('OK');
+  expect(typeof span.attributes.duration_ms).toBe('number');
+
+  const serialized = JSON.stringify(span);
+  expect(serialized).not.toContain('sk-ant-test-fake');
+  expect(serialized).not.toContain('secret-prompt-marker');
+  expect(serialized.toLowerCase()).not.toContain('authorization');
+  expect(serialized.toLowerCase()).not.toContain('api_key');
+});
+
+test('cumulative layout shift stays under 0.01 during AI quick-entry', async ({ page }) => {
+  await seedKeyAndMockAI(page, { delayMs: 300 });
+  await page.addInitScript(() => {
+    window.__cls = 0;
+    try {
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (!entry.hadRecentInput) window.__cls += entry.value;
+        }
+      }).observe({ type: 'layout-shift', buffered: true });
+    } catch (e) {}
+  });
+
+  await page.goto('/');
+  await page.waitForSelector('input[placeholder="Describe what you ate..."]', { timeout: 8000 });
+
+  const input = page.locator('input[placeholder="Describe what you ate..."]');
+  await input.fill('test meal');
+  await input.press('Enter');
+
+  await page.waitForFunction(() => {
+    const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+    return (s.dayLog || []).length > 0;
+  }, null, { timeout: 5000 });
+  await page.waitForTimeout(300);
+
+  const cls = await page.evaluate(() => window.__cls || 0);
+  expect(cls).toBeLessThan(0.01);
+});
+
 // ── Security regression: quickText length cap ────────────────────────────────
 
 test('quick entry caps outbound prompt content at MAX_QUICK_TEXT', async ({ page }) => {

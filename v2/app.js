@@ -451,6 +451,26 @@ function FocusPoints({
 }
 
 // ============================================================
+// AISkeleton — renders inside the reserved food-log row shell
+// ============================================================
+function AISkeleton() {
+  return /*#__PURE__*/React.createElement("div", {
+    "data-testid": "ai-skeleton",
+    "aria-busy": "true",
+    "aria-label": "Estimating nutrition",
+    className: "liquid-glass rounded-2xl px-4 py-3 flex items-center gap-3 min-h-[4.5rem]"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "shimmer-block w-8 h-8 rounded-full"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0 space-y-2"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "shimmer-block block h-3 w-2/5 rounded"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "shimmer-block block h-2.5 w-3/5 rounded"
+  })));
+}
+
+// ============================================================
 // HomeScreen
 // ============================================================
 function HomeScreen({
@@ -483,8 +503,12 @@ function HomeScreen({
     setAiLoading(true);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
+    const trimmed = quickText.slice(0, MAX_QUICK_TEXT);
+    const span = typeof window !== "undefined" && window.__tracer ? window.__tracer.startSpan("ai.request", {
+      model: state.aiModel || "claude-sonnet-4-6",
+      "input.length": trimmed.length
+    }) : null;
     try {
-      const trimmed = quickText.slice(0, MAX_QUICK_TEXT);
       const sysPrompt = `You are a nutrition estimation assistant. Given a food description, respond with ONLY a JSON object containing these 16 nutrient keys with numeric values (no text, no markdown): ${NUTRIENT_KEYS.join(", ")}. Units: protein/carbs/fat/fiber/sat_fat in g, epa_dha/calcium/iron/zinc/potassium/magnesium/vit_c in mg, vit_d in IU, vit_e in mg, b12 in mcg, folate in mcg. Estimate reasonable values for a single serving.`;
       const resp = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -537,11 +561,18 @@ function HomeScreen({
         entryId
       });
       setQuickText("");
+      if (span) span.end("ok", {
+        "http.status_code": resp.status
+      });
     } catch (err) {
       showToast({
         text: `AI error: ${err.message}`
       });
+      if (span) span.end("error", {
+        "error.message": String(err && err.message || err).slice(0, 120)
+      });
     } finally {
+      clearTimeout(timer);
       setAiLoading(false);
     }
   };
@@ -595,15 +626,15 @@ function HomeScreen({
     size: 22,
     className: "text-blue-400",
     fill: true
-  })))), state.dayLog.length > 0 && /*#__PURE__*/React.createElement("div", {
+  })))), (state.dayLog.length > 0 || aiLoading) && /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "font-headline text-lg font-bold"
   }, "Today's Meals"), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2"
-  }, state.dayLog.map(entry => /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2 min-h-[4.5rem]"
+  }, aiLoading && /*#__PURE__*/React.createElement(AISkeleton, null), state.dayLog.map(entry => /*#__PURE__*/React.createElement("div", {
     key: entry.id,
-    className: "liquid-glass rounded-2xl px-4 py-3 flex items-center gap-3"
+    className: "liquid-glass rounded-2xl px-4 py-3 flex items-center gap-3 min-h-[4.5rem]"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-2xl"
   }, entry.emoji), /*#__PURE__*/React.createElement("div", {
@@ -1483,7 +1514,7 @@ function InsightsScreen() {
     className: "text-xs text-on-surface-variant"
   }, formatShortDate(selectedCell.date))), /*#__PURE__*/React.createElement("div", {
     "data-testid": "nutrient-heatmap",
-    className: "overflow-x-auto -mx-1 px-1",
+    className: "overflow-x-auto -mx-1 px-1 min-h-[18rem]",
     style: {
       WebkitOverflowScrolling: "touch"
     }
@@ -1584,7 +1615,7 @@ function SettingsScreen() {
   }, "Intelligence"), /*#__PURE__*/React.createElement("div", {
     className: "glass-card rounded-xl overflow-hidden"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "px-4 py-3.5 flex items-center gap-3"
+    className: "px-4 py-3.5 flex items-center gap-3 min-h-[3.5rem]"
   }, /*#__PURE__*/React.createElement("div", {
     className: "w-9 h-9 rounded-xl bg-blue-600/20 flex items-center justify-center"
   }, /*#__PURE__*/React.createElement(Icon, {
