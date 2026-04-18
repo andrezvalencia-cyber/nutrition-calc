@@ -764,25 +764,30 @@ function LogDaySheet({
     showToast
   } = useToast();
   const [tab, setTab] = useState("meals");
-  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [selectedRecipes, setSelectedRecipes] = useState([]);
   const [ingredientStates, setIngredientStates] = useState([]);
   const [closing, setClosing] = useState(false);
+  const selectedRecipe = selectedRecipes.length === 1 ? selectedRecipes[0] : null;
   const mealRecipes = useMemo(() => Object.entries(allRecipes).filter(([, r]) => r.type === "meal" || r.type === "snack" || r.type === "supplement_food"), [allRecipes]);
   const suppRecipes = useMemo(() => Object.entries(allRecipes).filter(([, r]) => r.type === "supplement"), [allRecipes]);
   const [checkedSupps, setCheckedSupps] = useState({});
   const handleSelectRecipe = id => {
-    if (selectedRecipe === id) {
-      setSelectedRecipe(null);
-      return;
-    }
     const recipe = allRecipes[id];
     if (!recipe) return;
-    setSelectedRecipe(id);
-    setIngredientStates(recipe.ingredients.map(ing => ({
-      id: ing.id,
-      qty: INGREDIENTS[ing.id]?.defaultQty || 1,
-      swapGroup: ing.swapGroup
-    })));
+    setSelectedRecipes(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      if (next.length === 1) {
+        const r = allRecipes[next[0]];
+        setIngredientStates(r.ingredients.map(ing => ({
+          id: ing.id,
+          qty: INGREDIENTS[ing.id]?.defaultQty || 1,
+          swapGroup: ing.swapGroup
+        })));
+      } else {
+        setIngredientStates([]);
+      }
+      return next;
+    });
   };
   const updateIngQty = (idx, qty) => {
     setIngredientStates(prev => prev.map((s, i) => i === idx ? {
@@ -806,27 +811,43 @@ function LogDaySheet({
     setTimeout(onClose, 300);
   };
   const handleConfirmMeal = () => {
-    if (selectedRecipe) {
-      const recipe = allRecipes[selectedRecipe];
-      const entryId = genId();
-      const entry = {
-        id: entryId,
-        recipeId: selectedRecipe,
+    const mealEntries = selectedRecipes.map(rid => {
+      const recipe = allRecipes[rid];
+      if (!recipe) return null;
+      const isSingle = selectedRecipes.length === 1;
+      const ingStates = isSingle ? [...ingredientStates] : recipe.ingredients.map(ing => ({
+        id: ing.id,
+        qty: INGREDIENTS[ing.id]?.defaultQty || 1,
+        swapGroup: ing.swapGroup
+      }));
+      const nutrients = isSingle ? projectedNutrients : computeMealNutrients(recipe, ingStates);
+      return {
+        id: genId(),
+        recipeId: rid,
         name: recipe.name,
         emoji: recipe.emoji,
-        nutrients: projectedNutrients,
-        ingredientStates: [...ingredientStates],
+        nutrients,
+        ingredientStates: ingStates,
         timestamp: Date.now()
       };
+    }).filter(Boolean);
+    if (mealEntries.length > 0) {
       setState(s => ({
         ...s,
-        dayLog: [...s.dayLog, entry]
+        dayLog: [...s.dayLog, ...mealEntries]
       }));
-      showToast({
-        text: `${recipe.emoji} ${recipe.name}`,
-        macros: projectedNutrients,
-        entryId
-      });
+      if (mealEntries.length === 1) {
+        const e = mealEntries[0];
+        showToast({
+          text: `${e.emoji} ${e.name}`,
+          macros: e.nutrients,
+          entryId: e.id
+        });
+      } else {
+        showToast({
+          text: `Added ${mealEntries.length} meals`
+        });
+      }
     }
     // Add checked supplements
     Object.entries(checkedSupps).forEach(([suppId, checked]) => {
@@ -904,7 +925,8 @@ function LogDaySheet({
   }, mealRecipes.map(([id, r]) => /*#__PURE__*/React.createElement("button", {
     key: id,
     onClick: () => handleSelectRecipe(id),
-    className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${selectedRecipe === id ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
+    "aria-pressed": selectedRecipes.includes(id),
+    className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${selectedRecipes.includes(id) ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
   }, r.emoji, " ", r.name))), selectedRecipe && allRecipes[selectedRecipe] && /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, /*#__PURE__*/React.createElement("h3", {
@@ -985,9 +1007,9 @@ function LogDaySheet({
     className: "absolute bottom-0 left-0 right-0 p-5 sheet-bottom-fade"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: handleConfirmMeal,
-    disabled: !selectedRecipe && !Object.values(checkedSupps).some(Boolean),
+    disabled: selectedRecipes.length === 0 && !Object.values(checkedSupps).some(Boolean),
     className: "w-full pill-active rounded-full py-3.5 text-white font-semibold font-headline text-sm disabled:opacity-40 transition"
-  }, "Confirm Entry"))));
+  }, selectedRecipes.length > 1 ? `Confirm Entry (${selectedRecipes.length})` : "Confirm Entry"))));
 }
 
 // ============================================================

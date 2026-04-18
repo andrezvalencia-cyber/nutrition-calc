@@ -430,7 +430,7 @@ const RECIPES = {
     ingredients: [{ id:"scotts_emulsion", swapGroup:null }]
   },
   standard_lunch: {
-    name: "Standard Lunch", emoji: "\u{1F957}", type: "meal",
+    name: "Lunch", emoji: "\u{1F957}", type: "meal",
     verifiedTotal: {
       protein:30.6, carbs:40.9, fat:32.3, fiber:14.9, sat_fat:4.3,
       epa_dha:0, calcium:223, iron:9.0, zinc:6.4, vit_d:0,
@@ -479,7 +479,7 @@ const RECIPES = {
     ]
   },
   standard_dinner: {
-    name: "Standard Dinner", emoji: "\u{1F372}", type: "meal",
+    name: "Dinner", emoji: "\u{1F372}", type: "meal",
     verifiedTotal: {
       protein:38.0, carbs:140.0, fat:15.6, fiber:28.7, sat_fat:3.3,
       epa_dha:0, calcium:128, iron:8.3, zinc:4.6, vit_d:41,

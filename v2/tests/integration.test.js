@@ -90,6 +90,43 @@ test('export button creates a Blob download without CSP error', async ({ page })
   expect(cspErrors).toHaveLength(0);
 });
 
+// ── Multi-meal selection in LogDaySheet ──────────────────────────────────────
+
+test('multi-select: two meals selected before Confirm produce two dayLog entries', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForSelector('input[placeholder="Describe what you ate..."]', { timeout: 8000 });
+  // Open LogDaySheet via the "+" button in HomeScreen header
+  await page.locator('button:has-text("add_circle")').first().click();
+  await page.waitForSelector('h2:has-text("Log Entry")', { timeout: 8000 });
+
+  // Click Lunch and Dinner cards (renamed from "Standard Lunch" / "Standard Dinner")
+  const lunchBtn = page.getByRole('button', { name: /^\S+\s+Lunch$/ });
+  const dinnerBtn = page.getByRole('button', { name: /^\S+\s+Dinner$/ });
+  await lunchBtn.click();
+  await dinnerBtn.click();
+
+  // Both should show aria-pressed=true (active state)
+  await expect(lunchBtn).toHaveAttribute('aria-pressed', 'true');
+  await expect(dinnerBtn).toHaveAttribute('aria-pressed', 'true');
+
+  // Confirm
+  await page.click('button:has-text("Confirm Entry")');
+
+  // Verify dayLog has both recipeIds
+  await page.waitForFunction(() => {
+    const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+    const ids = (s.dayLog || []).map((e) => e.recipeId);
+    return ids.includes('standard_lunch') && ids.includes('standard_dinner');
+  }, null, { timeout: 5000 });
+
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}')
+  );
+  const ids = state.dayLog.map((e) => e.recipeId);
+  expect(ids).toContain('standard_lunch');
+  expect(ids).toContain('standard_dinner');
+});
+
 // ── Security regression: quickText length cap ────────────────────────────────
 
 test('quick entry caps outbound prompt content at MAX_QUICK_TEXT', async ({ page }) => {
