@@ -114,29 +114,8 @@ function NutritionProvider({
     LocalStore.saveApiKey(key);
   }, []);
   const allRecipes = useMemo(() => Modules.Recipes.getAllRecipes(), []);
-  const runningTotals = useMemo(() => {
-    const base = emptyNutrients();
-    // add carryover
-    const co = state.fatSolubleCarryover || {};
-    NUTRIENT_KEYS.forEach(k => {
-      base[k] += co[k] || 0;
-    });
-    // add dayLog meals
-    (state.dayLog || []).forEach(entry => {
-      const n = entry.nutrients || emptyNutrients();
-      NUTRIENT_KEYS.forEach(k => {
-        base[k] += n[k] || 0;
-      });
-    });
-    return base;
-  }, [state.dayLog, state.fatSolubleCarryover]);
-  const gapsClosed = useMemo(() => {
-    let count = 0;
-    NUTRIENT_KEYS.forEach(k => {
-      if (getStatus(k, runningTotals[k]).closed) count++;
-    });
-    return count;
-  }, [runningTotals]);
+  const runningTotals = useMemo(() => Modules.GapEngine.computeRunningTotals(state), [state.dayLog, state.fatSolubleCarryover]);
+  const gapsClosed = useMemo(() => Modules.GapEngine.computeGapsClosed(runningTotals), [runningTotals]);
   const value = useMemo(() => ({
     state,
     setState,
