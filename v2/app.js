@@ -803,7 +803,7 @@ function LogDaySheet({
         const r = allRecipes[next[0]];
         setIngredientStates(r.ingredients.map(ing => ({
           id: ing.id,
-          qty: INGREDIENTS[ing.id]?.defaultQty || 1,
+          qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
           swapGroup: ing.swapGroup
         })));
       } else {
@@ -822,7 +822,7 @@ function LogDaySheet({
     setIngredientStates(prev => prev.map((s, i) => i === idx ? {
       ...s,
       id: newId,
-      qty: INGREDIENTS[newId]?.defaultQty || 1
+      qty: Modules.Catalog.getIngredient(newId)?.defaultQty || 1
     } : s));
   };
   const projectedNutrients = useMemo(() => {
@@ -840,7 +840,7 @@ function LogDaySheet({
       const isSingle = selectedRecipes.length === 1;
       const ingStates = isSingle ? [...ingredientStates] : recipe.ingredients.map(ing => ({
         id: ing.id,
-        qty: INGREDIENTS[ing.id]?.defaultQty || 1,
+        qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
         swapGroup: ing.swapGroup
       }));
       const nutrients = isSingle ? projectedNutrients : computeMealNutrients(recipe, ingStates);
@@ -888,7 +888,7 @@ function LogDaySheet({
         },
         ingredientStates: recipe.ingredients.map(ing => ({
           id: ing.id,
-          qty: INGREDIENTS[ing.id]?.defaultQty || 1,
+          qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
           swapGroup: null
         })),
         timestamp: Date.now()
@@ -955,7 +955,7 @@ function LogDaySheet({
   }, /*#__PURE__*/React.createElement("h3", {
     className: "font-headline text-base font-semibold"
   }, "Ingredients"), ingredientStates.map((ing, idx) => {
-    const ingData = INGREDIENTS[ing.id];
+    const ingData = Modules.Catalog.getIngredient(ing.id);
     if (!ingData) return null;
     return /*#__PURE__*/React.createElement("div", {
       key: idx,
@@ -964,7 +964,7 @@ function LogDaySheet({
       className: "flex items-center justify-between"
     }, /*#__PURE__*/React.createElement("span", {
       className: "text-sm font-semibold"
-    }, ingData.name), ing.swapGroup && SWAP_GROUPS[ing.swapGroup] && /*#__PURE__*/React.createElement(SwapDropdown, {
+    }, ingData.name), ing.swapGroup && Modules.Catalog.getSwapGroup(ing.swapGroup) && /*#__PURE__*/React.createElement(SwapDropdown, {
       group: ing.swapGroup,
       currentId: ing.id,
       onSwap: newId => swapIngredient(idx, newId)
@@ -1044,7 +1044,7 @@ function SwapDropdown({
   onSwap
 }) {
   const [open, setOpen] = useState(false);
-  const options = SWAP_GROUPS[group] || [];
+  const options = Modules.Catalog.getSwapGroup(group) || [];
   if (options.length <= 1) return null;
   return /*#__PURE__*/React.createElement("div", {
     className: "relative"
@@ -1054,7 +1054,7 @@ function SwapDropdown({
   }, "Change"), open && /*#__PURE__*/React.createElement("div", {
     className: "absolute right-0 top-6 z-20 bg-surface-container-highest rounded-xl border border-on-surface/10 shadow-xl overflow-hidden min-w-[160px]"
   }, options.map(optId => {
-    const ing = INGREDIENTS[optId];
+    const ing = Modules.Catalog.getIngredient(optId);
     if (!ing) return null;
     return /*#__PURE__*/React.createElement("button", {
       key: optId,

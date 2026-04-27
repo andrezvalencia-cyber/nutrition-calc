@@ -667,7 +667,7 @@
             const r = allRecipes[next[0]];
             setIngredientStates(r.ingredients.map((ing) => ({
               id: ing.id,
-              qty: INGREDIENTS[ing.id]?.defaultQty || 1,
+              qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
               swapGroup: ing.swapGroup,
             })));
           } else {
@@ -683,7 +683,7 @@
 
       const swapIngredient = (idx, newId) => {
         setIngredientStates((prev) => prev.map((s, i) =>
-          i === idx ? { ...s, id: newId, qty: INGREDIENTS[newId]?.defaultQty || 1 } : s
+          i === idx ? { ...s, id: newId, qty: Modules.Catalog.getIngredient(newId)?.defaultQty || 1 } : s
         ));
       };
 
@@ -706,7 +706,7 @@
             ? [...ingredientStates]
             : recipe.ingredients.map((ing) => ({
                 id: ing.id,
-                qty: INGREDIENTS[ing.id]?.defaultQty || 1,
+                qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
                 swapGroup: ing.swapGroup,
               }));
           const nutrients = isSingle
@@ -746,7 +746,7 @@
             nutrients: { ...recipe.verifiedTotal },
             ingredientStates: recipe.ingredients.map((ing) => ({
               id: ing.id,
-              qty: INGREDIENTS[ing.id]?.defaultQty || 1,
+              qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
               swapGroup: null,
             })),
             timestamp: Date.now(),
@@ -822,13 +822,13 @@
                     <div className="space-y-3">
                       <h3 className="font-headline text-base font-semibold">Ingredients</h3>
                       {ingredientStates.map((ing, idx) => {
-                        const ingData = INGREDIENTS[ing.id];
+                        const ingData = Modules.Catalog.getIngredient(ing.id);
                         if (!ingData) return null;
                         return (
                           <div key={idx} className="liquid-glass p-4 rounded-3xl space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-sm font-semibold">{ingData.name}</span>
-                              {ing.swapGroup && SWAP_GROUPS[ing.swapGroup] && (
+                              {ing.swapGroup && Modules.Catalog.getSwapGroup(ing.swapGroup) && (
                                 <SwapDropdown
                                   group={ing.swapGroup}
                                   currentId={ing.id}
@@ -925,7 +925,7 @@
     // ============================================================
     function SwapDropdown({ group, currentId, onSwap }) {
       const [open, setOpen] = useState(false);
-      const options = SWAP_GROUPS[group] || [];
+      const options = Modules.Catalog.getSwapGroup(group) || [];
       if (options.length <= 1) return null;
 
       return (
@@ -939,7 +939,7 @@
           {open && (
             <div className="absolute right-0 top-6 z-20 bg-surface-container-highest rounded-xl border border-on-surface/10 shadow-xl overflow-hidden min-w-[160px]">
               {options.map((optId) => {
-                const ing = INGREDIENTS[optId];
+                const ing = Modules.Catalog.getIngredient(optId);
                 if (!ing) return null;
                 return (
                   <button
