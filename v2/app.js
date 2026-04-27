@@ -655,32 +655,10 @@ function LogDayModal({
       digestion,
       notes
     };
-    // Fat-soluble carryover: B12 5000/7 for 6 days, VitE 268/7 for 6 days
-    const hasB12 = state.dayLog.some(e => e.nutrients.b12 >= 1000);
-    const hasVitE = state.dayLog.some(e => e.nutrients.vit_e >= 100);
-    const newCarryover = {
-      b12: 0,
-      vit_e: 0,
-      vit_d: 0
-    };
-    const newDays = {
-      b12: 0,
-      vit_e: 0
-    };
-    if (hasB12) {
-      newCarryover.b12 = Math.round(5000 / 7);
-      newDays.b12 = 6;
-    } else if ((state.carryoverDaysRemaining?.b12 || 0) > 1) {
-      newCarryover.b12 = Math.round(5000 / 7);
-      newDays.b12 = (state.carryoverDaysRemaining.b12 || 0) - 1;
-    }
-    if (hasVitE) {
-      newCarryover.vit_e = Math.round(268 / 7);
-      newDays.vit_e = 6;
-    } else if ((state.carryoverDaysRemaining?.vit_e || 0) > 1) {
-      newCarryover.vit_e = Math.round(268 / 7);
-      newDays.vit_e = (state.carryoverDaysRemaining.vit_e || 0) - 1;
-    }
+    const {
+      carryover: newCarryover,
+      daysRemaining: newDays
+    } = Modules.Carryover.computeCarryover(state);
     setState(s => ({
       ...s,
       dayHistory: [...(s.dayHistory || []), entry],
