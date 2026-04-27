@@ -644,28 +644,21 @@ function LogDayModal({
   const [digestion, setDigestion] = useState(3);
   const [notes, setNotes] = useState("");
   const handleLogDay = () => {
-    const entry = {
-      date: state.currentDate,
-      dayLog: state.dayLog,
-      totals: {
-        ...runningTotals
-      },
+    const entry = Modules.History.buildEntry(state, {
+      runningTotals,
       gapsClosed,
       energy,
       digestion,
       notes
-    };
-    const {
-      carryover: newCarryover,
-      daysRemaining: newDays
-    } = Modules.Carryover.computeCarryover(state);
+    });
+    const carry = Modules.Carryover.computeCarryover(state);
     setState(s => ({
       ...s,
       dayHistory: [...(s.dayHistory || []), entry],
       dayLog: [],
       currentDate: todayStr(),
-      fatSolubleCarryover: newCarryover,
-      carryoverDaysRemaining: newDays
+      fatSolubleCarryover: carry.carryover,
+      carryoverDaysRemaining: carry.daysRemaining
     }));
     showToast({
       text: `Day logged! ${gapsClosed}/16 gaps closed`
