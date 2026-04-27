@@ -10,7 +10,7 @@
 (function () {
   "use strict";
   window.SupabaseConfig = {
-    url: "TODO_SUPABASE_URL",       // e.g. "https://abcdxyz.supabase.co"
-    anonKey: "TODO_SUPABASE_ANON_KEY", // long JWT starting with "eyJ..."
+    url: "https://keftmczgwirmhlowgwqo.supabase.co",
+    anonKey: "sb_publishable_cIbCtSTdVqXVrrQU83Nx5Q_ANgJPOdA",
   };
 })();
