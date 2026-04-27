@@ -633,30 +633,10 @@ function computeCalories(totals) {
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-// ============================================================
-// STORAGE — V2 uses separate key, no migration
-// ============================================================
-var STORAGE_KEY_V2 = "nutrition_calc_v2";
-var API_KEY_STORAGE = "nutrition_calc_v2_api_key";
+// Storage primitives moved to src/store/local-store.js (window.LocalStore).
+// MAX_QUICK_TEXT is a UI cap (prompt-injection blast-radius limit, see CLAUDE.md §8),
+// kept here as a data constant.
 var MAX_QUICK_TEXT = 500;
-
-function loadState() {
-  try {
-    var r = localStorage.getItem(STORAGE_KEY_V2);
-    return r ? JSON.parse(r) : null;
-  } catch(e) {
-    console.warn("Failed to load state, using defaults:", e);
-    return null;
-  }
-}
-
-function saveState(s) {
-  try {
-    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(s));
-  } catch(e) {
-    console.warn("Failed to save state:", e);
-  }
-}
 
 var DEFAULT_STATE = {
   currentDate: todayStr(),

@@ -14,10 +14,8 @@
     const NutritionContext = createContext(null);
 
     function NutritionProvider({ children }) {
-      const [state, setStateRaw] = useState(() => { const saved = loadState(); return saved ? { ...DEFAULT_STATE, ...saved } : { ...DEFAULT_STATE }; });
-      const [apiKey, setApiKeyRaw] = useState(() => {
-        try { return localStorage.getItem(API_KEY_STORAGE) || ""; } catch { return ""; }
-      });
+      const [state, setStateRaw] = useState(() => { const saved = LocalStore.loadState(); return saved ? { ...DEFAULT_STATE, ...saved } : { ...DEFAULT_STATE }; });
+      const [apiKey, setApiKeyRaw] = useState(() => LocalStore.loadApiKey());
 
       const setState = useCallback((updater) => {
         setStateRaw((prev) => {
@@ -36,7 +34,7 @@
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
         saveTimerRef.current = setTimeout(() => {
           saveTimerRef.current = null;
-          saveState(latestStateRef.current);
+          LocalStore.saveState(latestStateRef.current);
         }, 250);
         return () => {
           if (saveTimerRef.current) {
@@ -50,7 +48,7 @@
           if (saveTimerRef.current) {
             clearTimeout(saveTimerRef.current);
             saveTimerRef.current = null;
-            saveState(latestStateRef.current);
+            LocalStore.saveState(latestStateRef.current);
           }
         };
         window.addEventListener("pagehide", flush);
@@ -82,7 +80,7 @@
 
       const setApiKey = useCallback((key) => {
         setApiKeyRaw(key);
-        try { localStorage.setItem(API_KEY_STORAGE, key); } catch {}
+        LocalStore.saveApiKey(key);
       }, []);
 
       const allRecipes = useMemo(() => ({ ...RECIPES, ...SUPPLEMENT_RECIPES }), []);
@@ -1478,8 +1476,8 @@
       };
 
       const handleClear = () => {
-        localStorage.removeItem(STORAGE_KEY_V2);
-        localStorage.removeItem(API_KEY_STORAGE);
+        LocalStore.clearState();
+        LocalStore.clearApiKey();
         setState({ ...DEFAULT_STATE });
         setApiKey("");
         setShowClearConfirm(false);

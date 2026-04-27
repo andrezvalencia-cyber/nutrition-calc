@@ -35,7 +35,7 @@ function NutritionProvider({
   children
 }) {
   const [state, setStateRaw] = useState(() => {
-    const saved = loadState();
+    const saved = LocalStore.loadState();
     return saved ? {
       ...DEFAULT_STATE,
       ...saved
@@ -43,13 +43,7 @@ function NutritionProvider({
       ...DEFAULT_STATE
     };
   });
-  const [apiKey, setApiKeyRaw] = useState(() => {
-    try {
-      return localStorage.getItem(API_KEY_STORAGE) || "";
-    } catch {
-      return "";
-    }
-  });
+  const [apiKey, setApiKeyRaw] = useState(() => LocalStore.loadApiKey());
   const setState = useCallback(updater => {
     setStateRaw(prev => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -72,7 +66,7 @@ function NutritionProvider({
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
-      saveState(latestStateRef.current);
+      LocalStore.saveState(latestStateRef.current);
     }, 250);
     return () => {
       if (saveTimerRef.current) {
@@ -86,7 +80,7 @@ function NutritionProvider({
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
-        saveState(latestStateRef.current);
+        LocalStore.saveState(latestStateRef.current);
       }
     };
     window.addEventListener("pagehide", flush);
@@ -117,9 +111,7 @@ function NutritionProvider({
   }, [state.themeMode]);
   const setApiKey = useCallback(key => {
     setApiKeyRaw(key);
-    try {
-      localStorage.setItem(API_KEY_STORAGE, key);
-    } catch {}
+    LocalStore.saveApiKey(key);
   }, []);
   const allRecipes = useMemo(() => ({
     ...RECIPES,
@@ -1596,8 +1588,8 @@ function SettingsScreen() {
     URL.revokeObjectURL(url);
   };
   const handleClear = () => {
-    localStorage.removeItem(STORAGE_KEY_V2);
-    localStorage.removeItem(API_KEY_STORAGE);
+    LocalStore.clearState();
+    LocalStore.clearApiKey();
     setState({
       ...DEFAULT_STATE
     });
