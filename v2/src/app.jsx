@@ -156,10 +156,7 @@
 
       const handleUndo = () => {
         if (toast.entryId) {
-          setState((s) => ({
-            ...s,
-            dayLog: s.dayLog.filter((e) => e.id !== toast.entryId),
-          }));
+          setState((s) => Modules.Log.removeEntry(s, toast.entryId));
         }
         dismissToast();
       };
@@ -411,7 +408,7 @@
             ingredientStates: [],
             timestamp: Date.now(),
           };
-          setState((s) => ({ ...s, dayLog: [...s.dayLog, entry] }));
+          setState((s) => Modules.Log.addEntry(s, entry));
           showToast({ text: `\uD83E\uDD16 ${entry.name}`, macros: nutrients, entryId });
           setQuickText("");
           if (span) span.end("ok", { "http.status_code": resp.status });
@@ -425,7 +422,7 @@
       };
 
       const removeMeal = (entryId) => {
-        setState((s) => ({ ...s, dayLog: s.dayLog.filter((e) => e.id !== entryId) }));
+        setState((s) => Modules.Log.removeEntry(s, entryId));
       };
 
       return (
@@ -724,7 +721,7 @@
         }).filter(Boolean);
 
         if (mealEntries.length > 0) {
-          setState((s) => ({ ...s, dayLog: [...s.dayLog, ...mealEntries] }));
+          setState((s) => Modules.Log.addEntries(s, mealEntries));
           if (mealEntries.length === 1) {
             const e = mealEntries[0];
             showToast({ text: `${e.emoji} ${e.name}`, macros: e.nutrients, entryId: e.id });
@@ -751,7 +748,7 @@
             })),
             timestamp: Date.now(),
           };
-          setState((s) => ({ ...s, dayLog: [...s.dayLog, entry] }));
+          setState((s) => Modules.Log.addEntry(s, entry));
         });
         if (Object.values(checkedSupps).some(Boolean)) {
           const count = Object.values(checkedSupps).filter(Boolean).length;
