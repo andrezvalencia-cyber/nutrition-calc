@@ -1124,30 +1124,10 @@
         (state.themeMode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
       // Build days array from history + today
-      const days = useMemo(() => {
-        const hist = (state.dayHistory || []).map(d => ({
-          date: d.date,
-          totals: d.totals || emptyNutrients(),
-          gapsClosed: d.gapsClosed || 0,
-          energy: d.energy ?? null,
-          digestion: d.digestion ?? null,
-        }));
-        if ((state.dayLog || []).length > 0) {
-          const today = state.currentDate || todayStr();
-          // Don't duplicate if today is already in history
-          if (!hist.some(d => d.date === today)) {
-            hist.push({
-              date: today,
-              totals: { ...runningTotals },
-              gapsClosed: gapsClosed,
-              energy: null,
-              digestion: null,
-            });
-          }
-        }
-        hist.sort((a, b) => a.date.localeCompare(b.date));
-        return hist;
-      }, [state.dayHistory, state.dayLog, state.currentDate, runningTotals, gapsClosed]);
+      const days = useMemo(
+        () => Modules.Insights.buildDays(state, runningTotals, gapsClosed),
+        [state.dayHistory, state.dayLog, state.currentDate, runningTotals, gapsClosed]
+      );
 
       const sliced = useMemo(() => days.slice(-range), [days, range]);
 
@@ -1157,63 +1137,13 @@
       );
 
       // Report card stats
-      const stats = useMemo(() => {
-        if (sliced.length === 0) return null;
-        const avgGaps = sliced.reduce((s, d) => s + d.gapsClosed, 0) / sliced.length;
-        const energyDays = sliced.filter(d => d.energy !== null);
-        const digestDays = sliced.filter(d => d.digestion !== null);
-        const avgEnergy = energyDays.length > 0
-          ? energyDays.reduce((s, d) => s + d.energy, 0) / energyDays.length : null;
-        const avgDigestion = digestDays.length > 0
-          ? digestDays.reduce((s, d) => s + d.digestion, 0) / digestDays.length : null;
-
-        // Per-nutrient hit rate
-        const hitCounts = {};
-        NUTRIENT_KEYS.forEach(k => { hitCounts[k] = 0; });
-        sliced.forEach(d => {
-          NUTRIENT_KEYS.forEach(k => {
-            if (getStatus(k, d.totals[k] || 0).closed) hitCounts[k]++;
-          });
-        });
-        const hitRate = {};
-        NUTRIENT_KEYS.forEach(k => { hitRate[k] = hitCounts[k] / sliced.length; });
-
-        const topHits = NUTRIENT_KEYS
-          .filter(k => hitRate[k] >= 0.8)
-          .sort((a, b) => hitRate[b] - hitRate[a]);
-        const chronicGaps = NUTRIENT_KEYS
-          .filter(k => hitRate[k] <= 0.3)
-          .sort((a, b) => hitRate[a] - hitRate[b]);
-
-        return { avgGaps, avgEnergy, avgDigestion, topHits, chronicGaps, hitRate };
-      }, [sliced]);
+      const stats = useMemo(() => Modules.Insights.aggregate(sliced), [sliced]);
 
       // Heatmap data: nutrientKey -> array of { pct, value, date }
-      const heatmapData = useMemo(() => {
-        const data = {};
-        const groups = [
-          { label: "Macros", keys: MACRO_KEYS },
-          { label: "Vitamins", keys: VITAMIN_KEYS },
-          { label: "Minerals", keys: MINERAL_KEYS },
-        ];
-        groups.forEach(g => {
-          g.keys.forEach(k => {
-            const isMaxType = OBJECTIVES[k] && OBJECTIVES[k].type === "maximum";
-            data[k] = sliced.map(d => {
-              const val = d.totals[k] || 0;
-              const s = getStatus(k, val);
-              return {
-                pct: s.pct,
-                value: val,
-                date: d.date,
-                closed: s.closed,
-                color: heatmapColor(s.pct, isDark, isMaxType),
-              };
-            });
-          });
-        });
-        return data;
-      }, [sliced, isDark]);
+      const heatmapData = useMemo(
+        () => Modules.Insights.buildHeatmap(sliced, isDark, heatmapColor),
+        [sliced, isDark]
+      );
 
       const formatShortDate = (dateStr) => {
         const d = new Date(dateStr + "T12:00:00");
