@@ -327,7 +327,7 @@ test('unpkg <script> tags are pinned and carry SRI integrity', async ({ page }) 
   for (const s of scripts) {
     const src = await s.getAttribute('src');
     const integrity = await s.getAttribute('integrity');
-    expect(src).toMatch(/react(-dom)?@\d+\.\d+\.\d+/);
+    expect(src).toMatch(/(react(-dom)?|@supabase\/supabase-js)@\d+\.\d+\.\d+/);
     expect(integrity).toMatch(/^sha384-.+/);
   }
 });
@@ -506,5 +506,93 @@ test.describe('observability beacon', () => {
     expect(calls[0].size).toBeGreaterThan(0);
     const bufLen = await page.evaluate(() => window.__tracer._bufferSize());
     expect(bufLen).toBe(0);
+  });
+});
+
+// ── Phase 3: Cloud Sync UI (auth scaffolding, no read/write yet) ─────────────
+test.describe('cloud sync settings', () => {
+  test('supabase-js UMD is pinned and carries SRI integrity', async ({ page }) => {
+    await page.goto('/');
+    const sb = page.locator('script[src*="@supabase/supabase-js"]');
+    await expect(sb).toHaveCount(1);
+    const src = await sb.getAttribute('src');
+    const integrity = await sb.getAttribute('integrity');
+    expect(src).toMatch(/@supabase\/supabase-js@\d+\.\d+\.\d+/);
+    expect(integrity).toMatch(/^sha384-.+/);
+  });
+
+  test('window.Modules.Identity exposes the public API surface', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => window.Modules && window.Modules.Identity, { timeout: 5000 });
+    const api = await page.evaluate(() => {
+      const I = window.Modules.Identity;
+      return {
+        isConfigured: typeof I.isConfigured,
+        getClient: typeof I.getClient,
+        getSession: typeof I.getSession,
+        signIn: typeof I.signIn,
+        signOut: typeof I.signOut,
+        onAuthStateChange: typeof I.onAuthStateChange,
+        configuredWithPlaceholders: I.isConfigured(),
+      };
+    });
+    expect(api.isConfigured).toBe('function');
+    expect(api.getClient).toBe('function');
+    expect(api.getSession).toBe('function');
+    expect(api.signIn).toBe('function');
+    expect(api.signOut).toBe('function');
+    expect(api.onAuthStateChange).toBe('function');
+    // With placeholder credentials in repo, isConfigured() must be false.
+    expect(api.configuredWithPlaceholders).toBe(false);
+  });
+
+  test('cloud sync toggle is off by default and persists across reload', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('nav button', { timeout: 8000 });
+    await page.locator('nav button').last().click();
+    await page.waitForSelector('[data-testid="cloud-sync-toggle"]', { timeout: 5000 });
+
+    const toggle = page.locator('[data-testid="cloud-sync-toggle"]');
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+
+    // Reload — toggle stays off (cloudSync persisted as false in state).
+    await page.reload();
+    await page.waitForSelector('nav button', { timeout: 8000 });
+    await page.locator('nav button').last().click();
+    await page.waitForSelector('[data-testid="cloud-sync-toggle"]', { timeout: 5000 });
+    await expect(page.locator('[data-testid="cloud-sync-toggle"]')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('toggling cloud sync on with placeholder config opens the sign-in modal with an unconfigured notice', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('nav button', { timeout: 8000 });
+    await page.locator('nav button').last().click();
+    await page.waitForSelector('[data-testid="cloud-sync-toggle"]', { timeout: 5000 });
+    await page.locator('[data-testid="cloud-sync-toggle"]').click();
+    const modal = page.locator('[data-testid="cloud-signin-modal"]');
+    await expect(modal).toBeVisible();
+    await expect(page.locator('[data-testid="cloud-signin-unconfigured"]')).toBeVisible();
+    // Toggle stays off because sign-in did not succeed.
+    await page.locator('button:has-text("Cancel")').first().click();
+    await expect(page.locator('[data-testid="cloud-sync-toggle"]')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('cloud-sync indicator in header reflects toggle+session state', async ({ page }) => {
+    await page.goto('/');
+    const indicator = page.locator('[data-testid="cloud-sync-indicator"]');
+    await expect(indicator).toBeVisible();
+    await expect(indicator).toHaveAttribute('data-active', 'false');
+  });
+
+  test('CSP still has no unsafe-eval after Supabase additions', async ({ page }) => {
+    await page.goto('/');
+    const csp = await page
+      .locator('meta[http-equiv="Content-Security-Policy"]')
+      .getAttribute('content');
+    expect(csp).not.toContain("'unsafe-eval'");
+    // script-src must not regain 'unsafe-inline' (style-src is allowed to keep it for fonts).
+    const scriptSrc = (csp.match(/script-src[^;]*/) || [''])[0];
+    expect(scriptSrc).not.toContain("'unsafe-inline'");
+    expect(csp).toContain('https://*.supabase.co');
   });
 });

@@ -37,6 +37,15 @@ Babel compiles the same source file. Never run only one and ship the other stale
   and Babel CLI for JSX transpilation. Keep it that way.
 - **`v2/data.js` must stay vanilla JS** — it is loaded as a plain `<script>` before
   React mounts. No JSX, no `import`, no top-level `await`.
+- **`window.Modules.*` namespace convention.** Non-JSX modules under
+  `v2/src/modules/<context>/` are loaded as plain `<script>` tags in `index.html`
+  and attach themselves to `window.Modules.<Context>` from inside an IIFE. App
+  code reaches them via that global — never via `require`/`import`. Current
+  members: `Modules.Catalog`, `Modules.Recipes`, `Modules.Log`, `Modules.GapEngine`,
+  `Modules.Carryover`, `Modules.History`, `Modules.Insights`, `Modules.Identity`.
+  Each module is independently testable in Node when it has no DOM/React deps.
+  JSX (Contexts, components) stays inline in `src/app.jsx` because the build
+  compiles only that one entry point.
 - **CSS custom properties** (`--color-surface`, `--color-on-surface`, `--color-ring-bg`,
   etc.) are defined in `v2/input.css` inside `@layer base`. They are NOT in `styles.css`.
   Edit them there; `styles.css` only has component-level overrides.

@@ -105,6 +105,45 @@
     function useNutrition() { return useContext(NutritionContext); }
 
     // ============================================================
+    // AuthContext (Phase 3 — UI only, no read/write yet)
+    // ============================================================
+    const AuthContext = createContext(null);
+
+    function AuthProvider({ children }) {
+      const Identity = window.Modules && window.Modules.Identity;
+      const configured = !!(Identity && Identity.isConfigured());
+      const [session, setSession] = useState(null);
+      const [status, setStatus] = useState(configured ? "loading" : "unconfigured");
+
+      useEffect(() => {
+        if (!configured) return;
+        let cancelled = false;
+        Identity.getSession().then((s) => {
+          if (cancelled) return;
+          setSession(s);
+          setStatus(s ? "signed_in" : "signed_out");
+        }).catch(() => { if (!cancelled) setStatus("signed_out"); });
+        const unsub = Identity.onAuthStateChange((s) => {
+          setSession(s);
+          setStatus(s ? "signed_in" : "signed_out");
+        });
+        return () => { cancelled = true; unsub && unsub(); };
+      }, [configured]);
+
+      const signIn = useCallback((email, password) => Identity.signIn(email, password), [Identity]);
+      const signOut = useCallback(() => Identity.signOut(), [Identity]);
+
+      const value = useMemo(() => ({
+        configured, status, session, user: (session && session.user) || null,
+        signIn, signOut,
+      }), [configured, status, session, signIn, signOut]);
+
+      return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    }
+
+    function useAuth() { return useContext(AuthContext); }
+
+    // ============================================================
     // Toast Context
     // ============================================================
     const ToastContext = createContext(null);
@@ -210,11 +249,31 @@
     // AppHeader
     // ============================================================
     function AppHeader() {
+      const { state } = useNutrition();
+      const auth = useAuth();
+      const cloudOn = !!state.cloudSync;
+      const signedIn = auth && auth.status === "signed_in";
+      // Dimmed until Phase 4 (no data flowing yet); active = sync toggle on AND signed in.
+      const indicatorActive = cloudOn && signedIn;
+      const indicatorLabel = !cloudOn ? "Cloud sync off" : (signedIn ? "Cloud sync on" : "Cloud sync — signed out");
       return (
         <header className="fixed top-0 left-0 right-0 z-30 h-16 bg-surface/80 backdrop-blur-3xl flex items-center px-5">
           <div className="flex items-center gap-2">
             <Icon name="bubble_chart" className="text-blue-500" size={28} fill />
             <span className="font-headline text-2xl font-extrabold tracking-tighter text-blue-500">Vitality</span>
+          </div>
+          <div
+            className="ml-auto flex items-center gap-1.5 text-xs"
+            data-testid="cloud-sync-indicator"
+            data-active={indicatorActive ? "true" : "false"}
+            title={indicatorLabel}
+            aria-label={indicatorLabel}
+          >
+            <Icon
+              name={indicatorActive ? "cloud_done" : "cloud_off"}
+              size={18}
+              className={indicatorActive ? "text-blue-400" : "text-on-surface-variant/40"}
+            />
           </div>
         </header>
       );
@@ -1350,9 +1409,59 @@
     // ============================================================
     function SettingsScreen() {
       const { apiKey, setApiKey, state, setState } = useNutrition();
+      const auth = useAuth();
       const [editingKey, setEditingKey] = useState(false);
       const [keyInput, setKeyInput] = useState(apiKey);
       const [showClearConfirm, setShowClearConfirm] = useState(false);
+      const [showSignIn, setShowSignIn] = useState(false);
+      const [signInEmail, setSignInEmail] = useState("");
+      const [signInPassword, setSignInPassword] = useState("");
+      const [signInError, setSignInError] = useState("");
+      const [signInBusy, setSignInBusy] = useState(false);
+
+      const cloudSyncOn = !!state.cloudSync;
+      const signedIn = auth && auth.status === "signed_in";
+
+      const handleCloudSyncToggle = () => {
+        if (cloudSyncOn) {
+          // Turn off — keep session intact; user can re-enable without re-auth.
+          setState((s) => ({ ...s, cloudSync: false }));
+        } else {
+          if (!auth || !auth.configured) {
+            setSignInError("Cloud sync is not configured yet.");
+            setShowSignIn(true);
+            return;
+          }
+          if (signedIn) {
+            setState((s) => ({ ...s, cloudSync: true }));
+          } else {
+            setSignInError("");
+            setShowSignIn(true);
+          }
+        }
+      };
+
+      const handleSignInSubmit = async (e) => {
+        e.preventDefault();
+        setSignInError("");
+        setSignInBusy(true);
+        try {
+          await auth.signIn(signInEmail.trim(), signInPassword);
+          setState((s) => ({ ...s, cloudSync: true }));
+          setShowSignIn(false);
+          setSignInEmail("");
+          setSignInPassword("");
+        } catch (err) {
+          setSignInError((err && err.message) || "Sign-in failed.");
+        } finally {
+          setSignInBusy(false);
+        }
+      };
+
+      const handleSignOut = async () => {
+        try { await auth.signOut(); } catch (_) { /* ignore */ }
+        setState((s) => ({ ...s, cloudSync: false }));
+      };
 
       const maskedKey = apiKey ? "\u2022\u2022\u2022\u2022" + apiKey.slice(-4) : "Not set";
 
@@ -1477,6 +1586,52 @@
             </div>
           </div>
 
+          {/* Cloud Sync */}
+          <div className="space-y-1">
+            <h2 className="text-xs font-semibold text-on-surface-variant tracking-wide px-1 mb-2 font-label">Cloud Sync</h2>
+            <div className="glass-card rounded-xl overflow-hidden">
+              <div className="px-4 py-3.5 flex items-center gap-3 min-h-[3.5rem]">
+                <div className="w-9 h-9 rounded-xl bg-cyan-600/20 flex items-center justify-center">
+                  <Icon name={cloudSyncOn ? "cloud_done" : "cloud_off"} size={18} className="text-cyan-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">Cloud Sync</p>
+                  <p className="text-xs text-on-surface-variant">
+                    {cloudSyncOn
+                      ? (signedIn ? `Signed in as ${auth.user && auth.user.email}` : "Signed out")
+                      : "Off — data stays on this device"}
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloudSyncToggle}
+                  data-testid="cloud-sync-toggle"
+                  aria-pressed={cloudSyncOn ? "true" : "false"}
+                  className={`w-11 h-6 rounded-full transition-colors flex items-center px-0.5 ${cloudSyncOn ? "bg-blue-600" : "bg-on-surface/15"}`}
+                >
+                  <span className={`block w-5 h-5 rounded-full bg-white transition-transform ${cloudSyncOn ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+              </div>
+              {cloudSyncOn && signedIn && (
+                <>
+                  <div className="mx-4 h-[0.5px] bg-on-surface/5" />
+                  <button
+                    onClick={handleSignOut}
+                    data-testid="cloud-sync-signout"
+                    className="w-full px-4 py-3.5 flex items-center gap-3 text-left hover:bg-on-surface/5 transition"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-on-surface/5 flex items-center justify-center">
+                      <Icon name="logout" size={18} className="text-on-surface-variant" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold">Sign Out</p>
+                      <p className="text-xs text-on-surface-variant">Disable cloud sync on this device</p>
+                    </div>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Data & Privacy */}
           <div className="space-y-1">
             <h2 className="text-xs font-semibold text-on-surface-variant tracking-wide px-1 mb-2 font-label">Data & Privacy</h2>
@@ -1509,6 +1664,58 @@
               </button>
             </div>
           </div>
+
+          {/* Cloud Sync Sign-In Modal */}
+          {showSignIn && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 animate-fade-in" data-testid="cloud-signin-modal">
+              <div className="absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-sm" onClick={() => setShowSignIn(false)} />
+              <form onSubmit={handleSignInSubmit} className="glass-sheet squircle p-6 w-full max-w-xs relative z-10 space-y-4" onClick={(e) => e.stopPropagation()}>
+                <h3 className="font-headline text-lg font-bold">Sign in to Cloud Sync</h3>
+                {(!auth || !auth.configured) && (
+                  <p className="text-xs text-on-surface-variant" data-testid="cloud-signin-unconfigured">
+                    Cloud sync is not configured yet. Ask the project owner to provision Supabase credentials.
+                  </p>
+                )}
+                <div className="space-y-2">
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={signInEmail}
+                    onChange={(e) => setSignInEmail(e.target.value)}
+                    autoComplete="email"
+                    required
+                    disabled={!auth || !auth.configured || signInBusy}
+                    className="w-full bg-on-surface/5 rounded-lg px-3 py-2 text-sm"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={signInPassword}
+                    onChange={(e) => setSignInPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                    disabled={!auth || !auth.configured || signInBusy}
+                    className="w-full bg-on-surface/5 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+                {signInError && (
+                  <p className="text-xs text-error" data-testid="cloud-signin-error">{signInError}</p>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setShowSignIn(false); setSignInError(""); }}
+                    className="flex-1 py-2.5 rounded-full border border-on-surface/10 text-sm font-semibold hover:bg-on-surface/5 transition"
+                  >Cancel</button>
+                  <button
+                    type="submit"
+                    disabled={!auth || !auth.configured || signInBusy}
+                    className="flex-1 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 transition disabled:opacity-50"
+                  >{signInBusy ? "Signing in…" : "Sign In"}</button>
+                </div>
+              </form>
+            </div>
+          )}
 
           {/* Clear Confirm Modal */}
           {showClearConfirm && (
@@ -1551,6 +1758,7 @@
 
       return (
         <NutritionProvider>
+          <AuthProvider>
           <ToastProvider>
             <AppHeader />
 
@@ -1569,6 +1777,7 @@
             <Toast />
             <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
           </ToastProvider>
+          </AuthProvider>
         </NutritionProvider>
       );
     }

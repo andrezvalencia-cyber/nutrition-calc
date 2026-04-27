@@ -122,6 +122,15 @@
   <!-- Tracer (OTLP/JSON console exporter + optional Supabase beacon) -->
   <script src="src/modules/observability/tracer.js"></script>
 
+  <!-- Supabase project config (window.SupabaseConfig) -->
+  <script src="src/store/supabase-config.js"></script>
+
+  <!-- Supabase JS UMD (pinned + SRI) -->
+  <script crossorigin="anonymous" integrity="sha384-OMZvx3Vy2g+m2/bV7wq4vKCSjS3P2+OVcOXSaqWaoK3ZoSAHaje1LSM9FK4MNk2J" src="https://unpkg.com/@supabase/supabase-js@2.105.0/dist/umd/supabase.js"></script>
+
+  <!-- Identity & auth wrapper (window.Modules.Identity) -->
+  <script src="src/modules/identity/auth.js"></script>
+
   <!-- React 18 UMD -->
   <script crossorigin="anonymous" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
   <script crossorigin="anonymous" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>

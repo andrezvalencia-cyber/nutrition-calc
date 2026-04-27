@@ -617,4 +617,5 @@ var DEFAULT_STATE = {
   darkMode: true,
   themeMode: "dark",
   aiModel: "claude-sonnet-4-6",
+  cloudSync: false,
 };
