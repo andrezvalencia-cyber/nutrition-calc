@@ -453,3 +453,58 @@ test.describe('nutrient carryover', () => {
     expect(closed).toBeGreaterThanOrEqual(2);
   });
 });
+
+// ── Phase 2: tracer beacon flush ──────────────────────────────────────────────
+
+test.describe('observability beacon', () => {
+  test('default-off: no sendBeacon call when observability disabled', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__beaconCalls = [];
+      const orig = navigator.sendBeacon ? navigator.sendBeacon.bind(navigator) : null;
+      navigator.sendBeacon = function (url, data) {
+        window.__beaconCalls.push({ url: String(url), size: data && data.size });
+        return orig ? orig(url, data) : true;
+      };
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => !!window.__tracer, { timeout: 5000 });
+    await page.evaluate(() => {
+      const s = window.__tracer.startSpan('ui.test', {});
+      s.end('ok', {});
+      // Simulate tab hide
+      Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    const calls = await page.evaluate(() => window.__beaconCalls);
+    expect(calls).toEqual([]);
+  });
+
+  test('enabled: sendBeacon fires on visibilitychange:hidden with buffered spans', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__beaconCalls = [];
+      navigator.sendBeacon = function (url, data) {
+        window.__beaconCalls.push({ url: String(url), size: data && data.size });
+        return true;
+      };
+      window.__observabilityConfig = {
+        enabled: true,
+        endpoint: 'https://example.supabase.co/functions/v1/observe',
+        token: 'test-token',
+      };
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => !!window.__tracer, { timeout: 5000 });
+    await page.evaluate(() => {
+      window.__tracer.startSpan('ui.test', {}).end('ok', {});
+      window.__tracer.startSpan('db.test', {}).end('ok', {});
+      Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    const calls = await page.evaluate(() => window.__beaconCalls);
+    expect(calls.length).toBeGreaterThanOrEqual(1);
+    expect(calls[0].url).toContain('supabase.co/functions/v1/observe');
+    expect(calls[0].size).toBeGreaterThan(0);
+    const bufLen = await page.evaluate(() => window.__tracer._bufferSize());
+    expect(bufLen).toBe(0);
+  });
+});

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.anthropic.com; img-src 'self' data:; worker-src 'none'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.anthropic.com https://*.supabase.co; img-src 'self' data:; worker-src 'none'" />
   <title>Vitality — Nutrition Calculator</title>
 
   <!-- Preconnects: font origins + AI endpoint (early TLS handshake) -->
@@ -119,8 +119,8 @@
   <!-- Insights engine (window.Modules.Insights) -->
   <script src="src/modules/insights/insights-engine.js"></script>
 
-  <!-- Tracer (OTLP/JSON console exporter) -->
-  <script src="tracer.js"></script>
+  <!-- Tracer (OTLP/JSON console exporter + optional Supabase beacon) -->
+  <script src="src/modules/observability/tracer.js"></script>
 
   <!-- React 18 UMD -->
   <script crossorigin="anonymous" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
