@@ -83,7 +83,7 @@
         LocalStore.saveApiKey(key);
       }, []);
 
-      const allRecipes = useMemo(() => ({ ...RECIPES, ...SUPPLEMENT_RECIPES }), []);
+      const allRecipes = useMemo(() => Modules.Recipes.getAllRecipes(), []);
 
       const runningTotals = useMemo(() => {
         const base = emptyNutrients();
@@ -689,7 +689,7 @@
 
       const projectedNutrients = useMemo(() => {
         if (!selectedRecipe) return emptyNutrients();
-        return computeMealNutrients(allRecipes[selectedRecipe], ingredientStates);
+        return Modules.Recipes.computeMealNutrients(allRecipes[selectedRecipe], ingredientStates);
       }, [selectedRecipe, ingredientStates, allRecipes]);
 
       const handleClose = () => {
@@ -711,7 +711,7 @@
               }));
           const nutrients = isSingle
             ? projectedNutrients
-            : computeMealNutrients(recipe, ingStates);
+            : Modules.Recipes.computeMealNutrients(recipe, ingStates);
           return {
             id: genId(),
             recipeId: rid,

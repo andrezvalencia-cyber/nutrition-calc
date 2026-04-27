@@ -538,38 +538,8 @@ function emptyNutrients() {
   return n;
 }
 
-function getIngNutrients(id, qty) {
-  var ing = INGREDIENTS[id];
-  if (!ing) return emptyNutrients();
-  var ratio = qty / ing.defaultQty;
-  var n = {};
-  NUTRIENT_KEYS.forEach(function(k) { n[k] = (ing[k] || 0) * ratio; });
-  return n;
-}
-
-function computeMealNutrients(recipe, states) {
-  if (!recipe || !states.length) return emptyNutrients();
-  var hasMod = states.some(function(s, i) {
-    var o = recipe.ingredients[i];
-    if (!o) return true;
-    return s.id !== o.id || s.qty !== (INGREDIENTS[o.id] ? INGREDIENTS[o.id].defaultQty : 1);
-  });
-  if (!hasMod) return Object.assign({}, recipe.verifiedTotal);
-  var t = Object.assign({}, recipe.verifiedTotal);
-  states.forEach(function(s, i) {
-    var o = recipe.ingredients[i];
-    if (!o) return;
-    var oi = INGREDIENTS[o.id];
-    if (!oi) return;
-    var oq = oi.defaultQty;
-    if (s.id !== o.id || s.qty !== oq) {
-      var on = getIngNutrients(o.id, oq);
-      var nn = getIngNutrients(s.id, s.qty);
-      NUTRIENT_KEYS.forEach(function(k) { t[k] = t[k] - on[k] + nn[k]; });
-    }
-  });
-  return t;
-}
+// getIngNutrients and computeMealNutrients moved to
+// src/modules/recipes/recipes.js (window.Modules.Recipes).
 
 function getStatus(key, value) {
   var obj = OBJECTIVES[key];

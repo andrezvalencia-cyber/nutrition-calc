@@ -113,10 +113,7 @@ function NutritionProvider({
     setApiKeyRaw(key);
     LocalStore.saveApiKey(key);
   }, []);
-  const allRecipes = useMemo(() => ({
-    ...RECIPES,
-    ...SUPPLEMENT_RECIPES
-  }), []);
+  const allRecipes = useMemo(() => Modules.Recipes.getAllRecipes(), []);
   const runningTotals = useMemo(() => {
     const base = emptyNutrients();
     // add carryover
@@ -827,7 +824,7 @@ function LogDaySheet({
   };
   const projectedNutrients = useMemo(() => {
     if (!selectedRecipe) return emptyNutrients();
-    return computeMealNutrients(allRecipes[selectedRecipe], ingredientStates);
+    return Modules.Recipes.computeMealNutrients(allRecipes[selectedRecipe], ingredientStates);
   }, [selectedRecipe, ingredientStates, allRecipes]);
   const handleClose = () => {
     setClosing(true);
@@ -843,7 +840,7 @@ function LogDaySheet({
         qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
         swapGroup: ing.swapGroup
       }));
-      const nutrients = isSingle ? projectedNutrients : computeMealNutrients(recipe, ingStates);
+      const nutrients = isSingle ? projectedNutrients : Modules.Recipes.computeMealNutrients(recipe, ingStates);
       return {
         id: genId(),
         recipeId: rid,
