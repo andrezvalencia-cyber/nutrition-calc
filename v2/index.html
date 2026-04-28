@@ -125,6 +125,9 @@
   <!-- Supabase project config (window.SupabaseConfig) -->
   <script src="src/store/supabase-config.js"></script>
 
+  <!-- idb-keyval UMD (pinned + SRI) — used only for the write-behind offline queue -->
+  <script crossorigin="anonymous" integrity="sha384-oM43ZjLL5cj/w3ORvbvwAubendEp51/buLZ9CGEMjp5ExAxNxAC7N7GJ2X2Oreb9" src="https://unpkg.com/idb-keyval@6.2.1/dist/umd.js"></script>
+
   <!-- Supabase JS UMD (pinned + SRI) -->
   <script crossorigin="anonymous" integrity="sha384-OMZvx3Vy2g+m2/bV7wq4vKCSjS3P2+OVcOXSaqWaoK3ZoSAHaje1LSM9FK4MNk2J" src="https://unpkg.com/@supabase/supabase-js@2.105.0/dist/umd/supabase.js"></script>
 
@@ -133,6 +136,9 @@
 
   <!-- Remote (Supabase) read-only store (window.RemoteStore) -->
   <script src="src/store/remote-store.js"></script>
+
+  <!-- Write-behind queue (window.WriteBehind) — Phase 5 -->
+  <script src="src/store/write-behind.js"></script>
 
   <!-- React 18 UMD -->
   <script crossorigin="anonymous" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>

@@ -327,7 +327,7 @@ test('unpkg <script> tags are pinned and carry SRI integrity', async ({ page }) 
   for (const s of scripts) {
     const src = await s.getAttribute('src');
     const integrity = await s.getAttribute('integrity');
-    expect(src).toMatch(/(react(-dom)?|@supabase\/supabase-js)@\d+\.\d+\.\d+/);
+    expect(src).toMatch(/(react(-dom)?|@supabase\/supabase-js|idb-keyval)@\d+\.\d+\.\d+/);
     expect(integrity).toMatch(/^sha384-.+/);
   }
 });
@@ -801,5 +801,185 @@ test.describe('cloud sync hydration (phase 4)', () => {
 
     const cls = await page.evaluate(() => window.__cls || 0);
     expect(cls).toBeLessThan(0.01);
+  });
+});
+
+// ── Phase 5: Write-behind queue ───────────────────────────────────────────────
+//
+// Three tests:
+//   A. WriteBehind + idb-keyval are loaded with correct API surface and SRI.
+//   B. Adding an entry while cloud sync is on causes WriteBehind to call
+//      upsert on the day_entries table (verified via a tracked fake client).
+//   C. A wbq:failed CustomEvent dispatched from JS shows "Could not save" toast.
+test.describe('write-behind queue (phase 5)', () => {
+
+  // Installs a writable fake Identity stub with a tracked Supabase client.
+  // All writes succeed. Tracks calls in window.wbqTracker (set/array).
+  async function installWriteTrackingStub(page) {
+    await page.addInitScript(() => {
+      window.wbqTracker = [];
+      const fakeUser = { id: 'test-user-uuid' };
+      const fakeSession = { user: fakeUser, access_token: 'fake' };
+
+      function buildQ(table) {
+        const q = {};
+        ['select', 'eq', 'is', 'gte', 'order'].forEach((m) => { q[m] = function () { return q; }; });
+        q.upsert = function (payload) {
+          window.wbqTracker.push({ op: 'upsert', table, payload });
+          return q;
+        };
+        q.update = function (payload) {
+          window.wbqTracker.push({ op: 'update', table, payload });
+          return q;
+        };
+        q.then = function (resolve, reject) {
+          return Promise.resolve({ data: null, error: null }).then(resolve, reject);
+        };
+        return q;
+      }
+
+      const fakeClient = {
+        from: function (table) { return buildQ(table); },
+        auth: {
+          getSession: function () {
+            return Promise.resolve({ data: { session: fakeSession }, error: null });
+          },
+          onAuthStateChange: function (cb) {
+            setTimeout(function () { cb('SIGNED_IN', fakeSession); }, 0);
+            return { data: { subscription: { unsubscribe: function () {} } } };
+          },
+          signInWithPassword: function () {
+            return Promise.resolve({ data: { session: fakeSession, user: fakeUser }, error: null });
+          },
+          signOut: function () { return Promise.resolve({ error: null }); },
+        },
+      };
+
+      const stub = {
+        isConfigured: function () { return true; },
+        getClient:    function () { return fakeClient; },
+        getSession:   function () { return Promise.resolve(fakeSession); },
+        signIn:       function () { return Promise.resolve({ session: fakeSession, user: fakeUser }); },
+        signOut:      function () { return Promise.resolve(); },
+        onAuthStateChange: function (cb) {
+          setTimeout(function () { cb(fakeSession); }, 0);
+          return function () {};
+        },
+      };
+
+      window.Modules = window.Modules || {};
+      Object.defineProperty(window.Modules, 'Identity', {
+        get: function () { return stub; },
+        set: function () {},
+        configurable: true,
+      });
+    });
+  }
+
+  test('WriteBehind module and idb-keyval UMD are loaded with correct API and SRI', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => window.WriteBehind, { timeout: 5000 });
+
+    const api = await page.evaluate(() => {
+      const W = window.WriteBehind;
+      return {
+        enqueue:      typeof W.enqueue,
+        flush:        typeof W.flush,
+        getQueueDepth: typeof W.getQueueDepth,
+        isCircuitOpen: typeof W.isCircuitOpen,
+      };
+    });
+    expect(api.enqueue).toBe('function');
+    expect(api.flush).toBe('function');
+    expect(api.getQueueDepth).toBe('function');
+    expect(api.isCircuitOpen).toBe('function');
+
+    // idb-keyval script tag is pinned and has SRI
+    const idbScript = page.locator('script[src*="idb-keyval"]');
+    await expect(idbScript).toHaveCount(1);
+    const src       = await idbScript.getAttribute('src');
+    const integrity = await idbScript.getAttribute('integrity');
+    expect(src).toMatch(/idb-keyval@\d+\.\d+\.\d+/);
+    expect(integrity).toMatch(/^sha384-.+/);
+
+    // idbKeyval global is present and has the expected API
+    const idbOk = await page.evaluate(() =>
+      typeof window.idbKeyval === 'object' &&
+      typeof window.idbKeyval.set === 'function' &&
+      typeof window.idbKeyval.values === 'function' &&
+      typeof window.idbKeyval.createStore === 'function'
+    );
+    expect(idbOk).toBe(true);
+  });
+
+  test('adding entry with cloud sync on calls upsert on day_entries via WriteBehind', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('nutrition_calc_v2', JSON.stringify({
+        currentDate: new Date().toISOString().slice(0, 10),
+        dayLog: [], dayHistory: [], cloudSync: true,
+        themeMode: 'dark', aiModel: 'claude-sonnet-4-6',
+        fatSolubleCarryover: { b12: 0, vit_e: 0, vit_d: 0 },
+        carryoverDaysRemaining: { b12: 0, vit_e: 0 },
+      }));
+      localStorage.setItem('nutrition_calc_v2_api_key', 'sk-ant-test-fake');
+    });
+    await installWriteTrackingStub(page);
+
+    await page.route('https://api.anthropic.com/v1/messages', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          content: [{ text: JSON.stringify({
+            protein: 10, carbs: 20, fat: 5, fiber: 2, sat_fat: 1,
+            epa_dha: 0, calcium: 50, iron: 1, zinc: 1, potassium: 200,
+            magnesium: 30, vit_c: 10, vit_d: 0, vit_e: 1, b12: 0.5, folate: 20,
+          }) }],
+        }),
+      });
+    });
+
+    await page.goto('/');
+    await page.waitForSelector('input[placeholder="Describe what you ate..."]', { timeout: 8000 });
+    const input = page.locator('input[placeholder="Describe what you ate..."]');
+    await input.fill('test sync meal');
+    await input.press('Enter');
+
+    // Wait for optimistic update to land in localStorage
+    await page.waitForFunction(() => {
+      const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+      return (s.dayLog || []).length > 0;
+    }, null, { timeout: 5000 });
+
+    // Flush the debounce immediately (skip the 2 s wait)
+    await page.evaluate(() => window.WriteBehind.flush());
+
+    // Wait for the fake client to receive the upsert
+    await page.waitForFunction(() => window.wbqTracker && window.wbqTracker.length > 0, null, { timeout: 3000 });
+
+    const calls = await page.evaluate(() => window.wbqTracker);
+    const upsert = calls.find((c) => c.op === 'upsert' && c.table === 'day_entries');
+    expect(upsert).toBeDefined();
+    expect(upsert.payload.user_id).toBe('test-user-uuid');
+    expect(typeof upsert.payload.idempotency_key).toBe('string');
+    expect(upsert.payload.idempotency_key.length).toBeGreaterThan(0);
+    expect(upsert.payload.name).toBeTruthy();
+    // idempotency_key = entry.id, generated by genId() — stable across retries
+    expect(upsert.payload.idempotency_key.length).toBeGreaterThan(4);
+  });
+
+  test('wbq:failed CustomEvent dispatches "Could not save" toast', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('input[placeholder="Describe what you ate..."]', { timeout: 8000 });
+
+    // Fire the event that WriteBehind emits after retry exhaustion
+    await page.evaluate(() => {
+      window.dispatchEvent(new CustomEvent('wbq:failed', { detail: { key: 'test-rollback-key' } }));
+    });
+
+    // The ToastProvider listener should render the retry toast
+    await page.waitForSelector('text=Could not save', { timeout: 3000 });
+    const text = await page.locator('text=Could not save').first().textContent();
+    expect(text).toContain('Could not save');
   });
 });

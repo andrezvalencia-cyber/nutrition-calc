@@ -8,22 +8,24 @@
     "build:css": "tailwindcss -i input.css -o tailwind-out.css --minify",
     "test": "playwright test",
     "test:headless": "playwright test --reporter=list",
-    "perf": "node tests/perf-benchmark.js"
+    "perf": "node tests/perf-benchmark.js",
+    "test:unit": "node /Users/andyv/Projects/nutrition-calculator/v2/tests/write-behind.test.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "tailwindcss": "^3.4.0",
+    "@tailwindcss/container-queries": "^0.1.0",
     "@tailwindcss/forms": "^0.5.0",
-    "@tailwindcss/container-queries": "^0.1.0"
+    "tailwindcss": "^3.4.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.24.0",
     "@babel/core": "^7.24.0",
     "@babel/preset-react": "^7.24.0",
     "@playwright/test": "^1.44.0",
+    "idb-keyval": "^6.2.1",
     "serve": "^14.2.0"
   }
 }

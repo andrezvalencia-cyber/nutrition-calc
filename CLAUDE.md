@@ -14,6 +14,9 @@ cd v2 && npm run build:css && npm run build
 cd v2 && npm run build:css   # Tailwind: scans src/app.jsx → tailwind-out.css
 cd v2 && npm run build       # Babel: src/app.jsx → app.js
 
+# Run Node unit tests (no server needed)
+node /Users/andyv/Projects/nutrition-calculator/v2/tests/write-behind.test.js
+
 # Run integration tests (server on :8765 must be running first)
 cd v2 && npm test              # full Playwright reporter
 cd v2 && npm run test:headless # list reporter (terser CI-style output)
@@ -55,8 +58,29 @@ Babel compiles the same source file. Never run only one and ship the other stale
 - **`window.RemoteStore` is the only entry point for Supabase reads.** Defined
   in `v2/src/store/remote-store.js`; calls `Modules.Identity.getClient()` and
   exposes `fetchDays` / `fetchEntries` (Phase 4 read-only) plus `mapDayRow` /
-  `mapEntryRow` so callers stay declarative. Phase 5 will add write methods to
-  the same module — never bypass it with ad-hoc `.from(...)` calls in `app.jsx`.
+  `mapEntryRow` so callers stay declarative. Never bypass it with ad-hoc
+  `.from(...)` calls in `app.jsx`.
+- **`window.WriteBehind` is the only entry point for Supabase writes (Phase 5).**
+  Defined in `v2/src/store/write-behind.js`. All mutations in `app.jsx` that
+  must sync to Supabase call `WriteBehind.enqueue({ table, op, payload, rollback,
+  immediate })`. Never call `getClient().from(...).upsert(...)` directly from
+  components. Guard every enqueue call with `isSyncEnabled(auth, state)` so
+  writes only happen when `state.cloudSync === true` AND user is signed in.
+- **Phase 5 write rules:**
+  - `day_entries` upserts use `idempotency_key = entry.id` (stable `genId()`
+    value) as the Supabase conflict key — never regenerate on retry.
+  - `day_entries` deletes are soft-deletes (`deleted_at` timestamp), not physical
+    `DELETE` — required for LWW merge safety across devices.
+  - `days` rows upsert on `(user_id, day_date)` conflict target; always pass
+    `immediate: true` to bypass the 2 s debounce.
+  - Backoff formula: `min(500ms × 2^n + jitter(0..500ms), 30 s)`, max 6 tries.
+    At n=6 the delay deterministically clamps to 30 000 ms.
+  - Circuit breaker opens after 3 consecutive failures; closes on `online` event
+    + successful `auth.getSession()` ping. While open, queued items persist to
+    IndexedDB via `idb-keyval` (`vitality-v2-wbq / write_queue` store).
+  - On retry exhaustion: rollback thunk is called (undo optimistic update), then
+    `wbq:failed` CustomEvent fires → `ToastProvider` shows "Could not save — tap
+    to retry".
 - **Hermetic Supabase test stub (Phase 4 pattern).** Integration tests must
   not hit real Supabase. Stub `Modules.Identity` in `page.addInitScript` BEFORE
   the real `auth.js` runs by installing a non-overwritable property:

@@ -236,6 +236,45 @@ function CloudSync() {
 }
 
 // ============================================================
+// Phase 5 — WriteBehind helpers
+// ============================================================
+
+// Build a day_entries row for Supabase.
+function buildEntryRow(entry, userId, dayDate) {
+  return {
+    idempotency_key: entry.id,
+    user_id: userId,
+    day_date: dayDate,
+    recipe_id: entry.recipeId || null,
+    name: entry.name,
+    emoji: entry.emoji || "",
+    nutrients: entry.nutrients,
+    ingredient_states: entry.ingredientStates || [],
+    logged_at: new Date(entry.timestamp || Date.now()).toISOString()
+  };
+}
+
+// Build a days row for Supabase.
+function buildDayRow(histEntry, carryover, userId) {
+  return {
+    user_id: userId,
+    day_date: histEntry.date,
+    gaps_closed: histEntry.gapsClosed || 0,
+    energy: histEntry.energy || null,
+    digestion: histEntry.digestion || null,
+    notes: histEntry.notes || "",
+    totals: histEntry.totals || {},
+    carryover: carryover || {},
+    updated_at: new Date().toISOString()
+  };
+}
+
+// Guard: only enqueue if cloud sync is on, user is signed in, and WriteBehind is loaded.
+function isSyncEnabled(auth, state) {
+  return !!(window.WriteBehind && state.cloudSync && auth && auth.status === "signed_in" && auth.user);
+}
+
+// ============================================================
 // Toast Context
 // ============================================================
 const ToastContext = createContext(null);
@@ -266,6 +305,15 @@ function ToastProvider({
     } : null);
     setTimeout(() => setToast(null), 300);
   }, []);
+
+  // Show a retry toast when a queued write exhausts all retries.
+  useEffect(() => {
+    const handler = () => showToast({
+      text: "Could not save — tap to retry"
+    });
+    window.addEventListener("wbq:failed", handler);
+    return () => window.removeEventListener("wbq:failed", handler);
+  }, [showToast]);
   return /*#__PURE__*/React.createElement(ToastContext.Provider, {
     value: {
       toast,
@@ -574,6 +622,7 @@ function HomeScreen({
   const {
     showToast
   } = useToast();
+  const auth = useAuth();
   const [quickText, setQuickText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const gaps = useMemo(() => getOpenGaps(runningTotals), [runningTotals]);
@@ -638,6 +687,14 @@ function HomeScreen({
         timestamp: Date.now()
       };
       setState(s => Modules.Log.addEntry(s, entry));
+      if (isSyncEnabled(auth, state)) {
+        window.WriteBehind.enqueue({
+          table: "day_entries",
+          op: "upsert",
+          payload: buildEntryRow(entry, auth.user.id, state.currentDate),
+          rollback: () => setState(s => Modules.Log.removeEntry(s, entry.id))
+        });
+      }
       showToast({
         text: `\uD83E\uDD16 ${entry.name}`,
         macros: nutrients,
@@ -660,7 +717,19 @@ function HomeScreen({
     }
   };
   const removeMeal = entryId => {
+    const entry = state.dayLog.find(e => e.id === entryId);
     setState(s => Modules.Log.removeEntry(s, entryId));
+    if (isSyncEnabled(auth, state) && entry) {
+      window.WriteBehind.enqueue({
+        table: "day_entries",
+        op: "delete",
+        payload: {
+          idempotency_key: entry.id,
+          user_id: auth.user.id
+        },
+        rollback: () => setState(s => Modules.Log.addEntry(s, entry))
+      });
+    }
   };
   return /*#__PURE__*/React.createElement("div", {
     className: "pt-20 pb-28 px-4 space-y-6"
@@ -761,6 +830,7 @@ function LogDayModal({
   const {
     showToast
   } = useToast();
+  const auth = useAuth();
   const [energy, setEnergy] = useState(3);
   const [digestion, setDigestion] = useState(3);
   const [notes, setNotes] = useState("");
@@ -781,6 +851,14 @@ function LogDayModal({
       fatSolubleCarryover: carry.carryover,
       carryoverDaysRemaining: carry.daysRemaining
     }));
+    if (isSyncEnabled(auth, state)) {
+      window.WriteBehind.enqueue({
+        table: "days",
+        op: "upsert",
+        payload: buildDayRow(entry, carry.carryover, auth.user.id),
+        immediate: true
+      });
+    }
     showToast({
       text: `Day logged! ${gapsClosed}/16 gaps closed`
     });
@@ -840,11 +918,13 @@ function LogDaySheet({
 }) {
   const {
     allRecipes,
-    setState
+    setState,
+    state
   } = useNutrition();
   const {
     showToast
   } = useToast();
+  const auth = useAuth();
   const [tab, setTab] = useState("meals");
   const [selectedRecipes, setSelectedRecipes] = useState([]);
   const [ingredientStates, setIngredientStates] = useState([]);
@@ -915,6 +995,16 @@ function LogDaySheet({
     }).filter(Boolean);
     if (mealEntries.length > 0) {
       setState(s => Modules.Log.addEntries(s, mealEntries));
+      if (isSyncEnabled(auth, state)) {
+        mealEntries.forEach(e => {
+          window.WriteBehind.enqueue({
+            table: "day_entries",
+            op: "upsert",
+            payload: buildEntryRow(e, auth.user.id, state.currentDate),
+            rollback: () => setState(s => Modules.Log.removeEntry(s, e.id))
+          });
+        });
+      }
       if (mealEntries.length === 1) {
         const e = mealEntries[0];
         showToast({
@@ -950,6 +1040,14 @@ function LogDaySheet({
         timestamp: Date.now()
       };
       setState(s => Modules.Log.addEntry(s, entry));
+      if (isSyncEnabled(auth, state)) {
+        window.WriteBehind.enqueue({
+          table: "day_entries",
+          op: "upsert",
+          payload: buildEntryRow(entry, auth.user.id, state.currentDate),
+          rollback: () => setState(s => Modules.Log.removeEntry(s, entry.id))
+        });
+      }
     });
     if (Object.values(checkedSupps).some(Boolean)) {
       const count = Object.values(checkedSupps).filter(Boolean).length;
