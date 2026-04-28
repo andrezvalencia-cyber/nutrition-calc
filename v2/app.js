@@ -35,7 +35,7 @@ function NutritionProvider({
   children
 }) {
   const [state, setStateRaw] = useState(() => {
-    const saved = loadState();
+    const saved = LocalStore.loadState();
     return saved ? {
       ...DEFAULT_STATE,
       ...saved
@@ -43,13 +43,7 @@ function NutritionProvider({
       ...DEFAULT_STATE
     };
   });
-  const [apiKey, setApiKeyRaw] = useState(() => {
-    try {
-      return localStorage.getItem(API_KEY_STORAGE) || "";
-    } catch {
-      return "";
-    }
-  });
+  const [apiKey, setApiKeyRaw] = useState(() => LocalStore.loadApiKey());
   const setState = useCallback(updater => {
     setStateRaw(prev => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -72,7 +66,7 @@ function NutritionProvider({
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
-      saveState(latestStateRef.current);
+      LocalStore.saveState(latestStateRef.current);
     }, 250);
     return () => {
       if (saveTimerRef.current) {
@@ -86,7 +80,7 @@ function NutritionProvider({
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
-        saveState(latestStateRef.current);
+        LocalStore.saveState(latestStateRef.current);
       }
     };
     window.addEventListener("pagehide", flush);
@@ -117,37 +111,11 @@ function NutritionProvider({
   }, [state.themeMode]);
   const setApiKey = useCallback(key => {
     setApiKeyRaw(key);
-    try {
-      localStorage.setItem(API_KEY_STORAGE, key);
-    } catch {}
+    LocalStore.saveApiKey(key);
   }, []);
-  const allRecipes = useMemo(() => ({
-    ...RECIPES,
-    ...SUPPLEMENT_RECIPES
-  }), []);
-  const runningTotals = useMemo(() => {
-    const base = emptyNutrients();
-    // add carryover
-    const co = state.fatSolubleCarryover || {};
-    NUTRIENT_KEYS.forEach(k => {
-      base[k] += co[k] || 0;
-    });
-    // add dayLog meals
-    (state.dayLog || []).forEach(entry => {
-      const n = entry.nutrients || emptyNutrients();
-      NUTRIENT_KEYS.forEach(k => {
-        base[k] += n[k] || 0;
-      });
-    });
-    return base;
-  }, [state.dayLog, state.fatSolubleCarryover]);
-  const gapsClosed = useMemo(() => {
-    let count = 0;
-    NUTRIENT_KEYS.forEach(k => {
-      if (getStatus(k, runningTotals[k]).closed) count++;
-    });
-    return count;
-  }, [runningTotals]);
+  const allRecipes = useMemo(() => Modules.Recipes.getAllRecipes(), []);
+  const runningTotals = useMemo(() => Modules.GapEngine.computeRunningTotals(state), [state.dayLog, state.fatSolubleCarryover]);
+  const gapsClosed = useMemo(() => Modules.GapEngine.computeGapsClosed(runningTotals), [runningTotals]);
   const value = useMemo(() => ({
     state,
     setState,
@@ -163,6 +131,147 @@ function NutritionProvider({
 }
 function useNutrition() {
   return useContext(NutritionContext);
+}
+
+// ============================================================
+// AuthContext (Phase 3 — UI only, no read/write yet)
+// ============================================================
+const AuthContext = createContext(null);
+function AuthProvider({
+  children
+}) {
+  const Identity = window.Modules && window.Modules.Identity;
+  const configured = !!(Identity && Identity.isConfigured());
+  const [session, setSession] = useState(null);
+  const [status, setStatus] = useState(configured ? "loading" : "unconfigured");
+  useEffect(() => {
+    if (!configured) return;
+    let cancelled = false;
+    Identity.getSession().then(s => {
+      if (cancelled) return;
+      setSession(s);
+      setStatus(s ? "signed_in" : "signed_out");
+    }).catch(() => {
+      if (!cancelled) setStatus("signed_out");
+    });
+    const unsub = Identity.onAuthStateChange(s => {
+      setSession(s);
+      setStatus(s ? "signed_in" : "signed_out");
+    });
+    return () => {
+      cancelled = true;
+      unsub && unsub();
+    };
+  }, [configured]);
+  const signIn = useCallback((email, password) => Identity.signIn(email, password), [Identity]);
+  const signOut = useCallback(() => Identity.signOut(), [Identity]);
+  const value = useMemo(() => ({
+    configured,
+    status,
+    session,
+    user: session && session.user || null,
+    signIn,
+    signOut
+  }), [configured, status, session, signIn, signOut]);
+  return /*#__PURE__*/React.createElement(AuthContext.Provider, {
+    value: value
+  }, children);
+}
+function useAuth() {
+  return useContext(AuthContext);
+}
+
+// ============================================================
+// CloudSync — Phase 4 read-only hydration (cloud → device)
+//
+// Runs once per mount when (cloudSync toggle on) AND (signed in) AND
+// (RemoteStore available). Defers the actual fetch to requestIdleCallback
+// so LCP is not blocked. Merge is append-only:
+//   - dayHistory dedup by date
+//   - dayLog dedup by id (cloud rows use idempotency_key, local rows use
+//     genId(); the two namespaces never collide).
+// No deletes or overwrites in this phase — Phase 5 introduces LWW.
+// ============================================================
+function CloudSync() {
+  const {
+    state,
+    setState
+  } = useNutrition();
+  const auth = useAuth();
+  const ranRef = useRef(false);
+  useEffect(() => {
+    if (ranRef.current) return;
+    if (!state.cloudSync) return;
+    if (!auth || auth.status !== "signed_in" || !auth.user) return;
+    if (!window.RemoteStore || !window.RemoteStore.isAvailable()) return;
+    ranRef.current = true;
+    const userId = auth.user.id;
+    const run = () => {
+      Promise.all([window.RemoteStore.fetchDays(userId), window.RemoteStore.fetchEntries(userId, state.currentDate)]).then(([days, entries]) => {
+        setState(s => {
+          const localDates = new Set((s.dayHistory || []).map(d => d.date));
+          const newHistoryRows = (days || []).filter(d => !localDates.has(d.date));
+          const mergedHistory = (s.dayHistory || []).concat(newHistoryRows).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+          const localIds = new Set((s.dayLog || []).map(e => e.id));
+          const newEntries = (entries || []).filter(e => !localIds.has(e.id));
+          const mergedLog = (s.dayLog || []).concat(newEntries);
+          return Object.assign({}, s, {
+            dayHistory: mergedHistory,
+            dayLog: mergedLog
+          });
+        });
+      }).catch(err => {
+        console.warn("Cloud hydration failed:", err && err.message);
+      });
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(run, {
+        timeout: 1500
+      });
+    } else {
+      setTimeout(run, 0);
+    }
+  }, [state.cloudSync, auth && auth.status, auth && auth.user, state.currentDate, setState]);
+  return null;
+}
+
+// ============================================================
+// Phase 5 — WriteBehind helpers
+// ============================================================
+
+// Build a day_entries row for Supabase.
+function buildEntryRow(entry, userId, dayDate) {
+  return {
+    idempotency_key: entry.id,
+    user_id: userId,
+    day_date: dayDate,
+    recipe_id: entry.recipeId || null,
+    name: entry.name,
+    emoji: entry.emoji || "",
+    nutrients: entry.nutrients,
+    ingredient_states: entry.ingredientStates || [],
+    logged_at: new Date(entry.timestamp || Date.now()).toISOString()
+  };
+}
+
+// Build a days row for Supabase.
+function buildDayRow(histEntry, carryover, userId) {
+  return {
+    user_id: userId,
+    day_date: histEntry.date,
+    gaps_closed: histEntry.gapsClosed || 0,
+    energy: histEntry.energy || null,
+    digestion: histEntry.digestion || null,
+    notes: histEntry.notes || "",
+    totals: histEntry.totals || {},
+    carryover: carryover || {},
+    updated_at: new Date().toISOString()
+  };
+}
+
+// Guard: only enqueue if cloud sync is on, user is signed in, and WriteBehind is loaded.
+function isSyncEnabled(auth, state) {
+  return !!(window.WriteBehind && state.cloudSync && auth && auth.status === "signed_in" && auth.user);
 }
 
 // ============================================================
@@ -196,6 +305,15 @@ function ToastProvider({
     } : null);
     setTimeout(() => setToast(null), 300);
   }, []);
+
+  // Show a retry toast when a queued write exhausts all retries.
+  useEffect(() => {
+    const handler = () => showToast({
+      text: "Could not save — tap to retry"
+    });
+    window.addEventListener("wbq:failed", handler);
+    return () => window.removeEventListener("wbq:failed", handler);
+  }, [showToast]);
   return /*#__PURE__*/React.createElement(ToastContext.Provider, {
     value: {
       toast,
@@ -222,10 +340,7 @@ function Toast() {
   if (!toast) return null;
   const handleUndo = () => {
     if (toast.entryId) {
-      setState(s => ({
-        ...s,
-        dayLog: s.dayLog.filter(e => e.id !== toast.entryId)
-      }));
+      setState(s => Modules.Log.removeEntry(s, toast.entryId));
     }
     dismissToast();
   };
@@ -291,6 +406,15 @@ function BottomNav({
 // AppHeader
 // ============================================================
 function AppHeader() {
+  const {
+    state
+  } = useNutrition();
+  const auth = useAuth();
+  const cloudOn = !!state.cloudSync;
+  const signedIn = auth && auth.status === "signed_in";
+  // Dimmed until Phase 4 (no data flowing yet); active = sync toggle on AND signed in.
+  const indicatorActive = cloudOn && signedIn;
+  const indicatorLabel = !cloudOn ? "Cloud sync off" : signedIn ? "Cloud sync on" : "Cloud sync — signed out";
   return /*#__PURE__*/React.createElement("header", {
     className: "fixed top-0 left-0 right-0 z-30 h-16 bg-surface/80 backdrop-blur-3xl flex items-center px-5"
   }, /*#__PURE__*/React.createElement("div", {
@@ -302,7 +426,17 @@ function AppHeader() {
     fill: true
   }), /*#__PURE__*/React.createElement("span", {
     className: "font-headline text-2xl font-extrabold tracking-tighter text-blue-500"
-  }, "Vitality")));
+  }, "Vitality")), /*#__PURE__*/React.createElement("div", {
+    className: "ml-auto flex items-center gap-1.5 text-xs",
+    "data-testid": "cloud-sync-indicator",
+    "data-active": indicatorActive ? "true" : "false",
+    title: indicatorLabel,
+    "aria-label": indicatorLabel
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: indicatorActive ? "cloud_done" : "cloud_off",
+    size: 18,
+    className: indicatorActive ? "text-blue-400" : "text-on-surface-variant/40"
+  })));
 }
 
 // ============================================================
@@ -488,6 +622,7 @@ function HomeScreen({
   const {
     showToast
   } = useToast();
+  const auth = useAuth();
   const [quickText, setQuickText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const gaps = useMemo(() => getOpenGaps(runningTotals), [runningTotals]);
@@ -551,10 +686,15 @@ function HomeScreen({
         ingredientStates: [],
         timestamp: Date.now()
       };
-      setState(s => ({
-        ...s,
-        dayLog: [...s.dayLog, entry]
-      }));
+      setState(s => Modules.Log.addEntry(s, entry));
+      if (isSyncEnabled(auth, state)) {
+        window.WriteBehind.enqueue({
+          table: "day_entries",
+          op: "upsert",
+          payload: buildEntryRow(entry, auth.user.id, state.currentDate),
+          rollback: () => setState(s => Modules.Log.removeEntry(s, entry.id))
+        });
+      }
       showToast({
         text: `\uD83E\uDD16 ${entry.name}`,
         macros: nutrients,
@@ -577,10 +717,19 @@ function HomeScreen({
     }
   };
   const removeMeal = entryId => {
-    setState(s => ({
-      ...s,
-      dayLog: s.dayLog.filter(e => e.id !== entryId)
-    }));
+    const entry = state.dayLog.find(e => e.id === entryId);
+    setState(s => Modules.Log.removeEntry(s, entryId));
+    if (isSyncEnabled(auth, state) && entry) {
+      window.WriteBehind.enqueue({
+        table: "day_entries",
+        op: "delete",
+        payload: {
+          idempotency_key: entry.id,
+          user_id: auth.user.id
+        },
+        rollback: () => setState(s => Modules.Log.addEntry(s, entry))
+      });
+    }
   };
   return /*#__PURE__*/React.createElement("div", {
     className: "pt-20 pb-28 px-4 space-y-6"
@@ -681,55 +830,35 @@ function LogDayModal({
   const {
     showToast
   } = useToast();
+  const auth = useAuth();
   const [energy, setEnergy] = useState(3);
   const [digestion, setDigestion] = useState(3);
   const [notes, setNotes] = useState("");
   const handleLogDay = () => {
-    const entry = {
-      date: state.currentDate,
-      dayLog: state.dayLog,
-      totals: {
-        ...runningTotals
-      },
+    const entry = Modules.History.buildEntry(state, {
+      runningTotals,
       gapsClosed,
       energy,
       digestion,
       notes
-    };
-    // Fat-soluble carryover: B12 5000/7 for 6 days, VitE 268/7 for 6 days
-    const hasB12 = state.dayLog.some(e => e.nutrients.b12 >= 1000);
-    const hasVitE = state.dayLog.some(e => e.nutrients.vit_e >= 100);
-    const newCarryover = {
-      b12: 0,
-      vit_e: 0,
-      vit_d: 0
-    };
-    const newDays = {
-      b12: 0,
-      vit_e: 0
-    };
-    if (hasB12) {
-      newCarryover.b12 = Math.round(5000 / 7);
-      newDays.b12 = 6;
-    } else if ((state.carryoverDaysRemaining?.b12 || 0) > 1) {
-      newCarryover.b12 = Math.round(5000 / 7);
-      newDays.b12 = (state.carryoverDaysRemaining.b12 || 0) - 1;
-    }
-    if (hasVitE) {
-      newCarryover.vit_e = Math.round(268 / 7);
-      newDays.vit_e = 6;
-    } else if ((state.carryoverDaysRemaining?.vit_e || 0) > 1) {
-      newCarryover.vit_e = Math.round(268 / 7);
-      newDays.vit_e = (state.carryoverDaysRemaining.vit_e || 0) - 1;
-    }
+    });
+    const carry = Modules.Carryover.computeCarryover(state);
     setState(s => ({
       ...s,
       dayHistory: [...(s.dayHistory || []), entry],
       dayLog: [],
       currentDate: todayStr(),
-      fatSolubleCarryover: newCarryover,
-      carryoverDaysRemaining: newDays
+      fatSolubleCarryover: carry.carryover,
+      carryoverDaysRemaining: carry.daysRemaining
     }));
+    if (isSyncEnabled(auth, state)) {
+      window.WriteBehind.enqueue({
+        table: "days",
+        op: "upsert",
+        payload: buildDayRow(entry, carry.carryover, auth.user.id),
+        immediate: true
+      });
+    }
     showToast({
       text: `Day logged! ${gapsClosed}/16 gaps closed`
     });
@@ -789,11 +918,13 @@ function LogDaySheet({
 }) {
   const {
     allRecipes,
-    setState
+    setState,
+    state
   } = useNutrition();
   const {
     showToast
   } = useToast();
+  const auth = useAuth();
   const [tab, setTab] = useState("meals");
   const [selectedRecipes, setSelectedRecipes] = useState([]);
   const [ingredientStates, setIngredientStates] = useState([]);
@@ -811,7 +942,7 @@ function LogDaySheet({
         const r = allRecipes[next[0]];
         setIngredientStates(r.ingredients.map(ing => ({
           id: ing.id,
-          qty: INGREDIENTS[ing.id]?.defaultQty || 1,
+          qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
           swapGroup: ing.swapGroup
         })));
       } else {
@@ -830,12 +961,12 @@ function LogDaySheet({
     setIngredientStates(prev => prev.map((s, i) => i === idx ? {
       ...s,
       id: newId,
-      qty: INGREDIENTS[newId]?.defaultQty || 1
+      qty: Modules.Catalog.getIngredient(newId)?.defaultQty || 1
     } : s));
   };
   const projectedNutrients = useMemo(() => {
     if (!selectedRecipe) return emptyNutrients();
-    return computeMealNutrients(allRecipes[selectedRecipe], ingredientStates);
+    return Modules.Recipes.computeMealNutrients(allRecipes[selectedRecipe], ingredientStates);
   }, [selectedRecipe, ingredientStates, allRecipes]);
   const handleClose = () => {
     setClosing(true);
@@ -848,10 +979,10 @@ function LogDaySheet({
       const isSingle = selectedRecipes.length === 1;
       const ingStates = isSingle ? [...ingredientStates] : recipe.ingredients.map(ing => ({
         id: ing.id,
-        qty: INGREDIENTS[ing.id]?.defaultQty || 1,
+        qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
         swapGroup: ing.swapGroup
       }));
-      const nutrients = isSingle ? projectedNutrients : computeMealNutrients(recipe, ingStates);
+      const nutrients = isSingle ? projectedNutrients : Modules.Recipes.computeMealNutrients(recipe, ingStates);
       return {
         id: genId(),
         recipeId: rid,
@@ -863,10 +994,17 @@ function LogDaySheet({
       };
     }).filter(Boolean);
     if (mealEntries.length > 0) {
-      setState(s => ({
-        ...s,
-        dayLog: [...s.dayLog, ...mealEntries]
-      }));
+      setState(s => Modules.Log.addEntries(s, mealEntries));
+      if (isSyncEnabled(auth, state)) {
+        mealEntries.forEach(e => {
+          window.WriteBehind.enqueue({
+            table: "day_entries",
+            op: "upsert",
+            payload: buildEntryRow(e, auth.user.id, state.currentDate),
+            rollback: () => setState(s => Modules.Log.removeEntry(s, e.id))
+          });
+        });
+      }
       if (mealEntries.length === 1) {
         const e = mealEntries[0];
         showToast({
@@ -896,15 +1034,20 @@ function LogDaySheet({
         },
         ingredientStates: recipe.ingredients.map(ing => ({
           id: ing.id,
-          qty: INGREDIENTS[ing.id]?.defaultQty || 1,
+          qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
           swapGroup: null
         })),
         timestamp: Date.now()
       };
-      setState(s => ({
-        ...s,
-        dayLog: [...s.dayLog, entry]
-      }));
+      setState(s => Modules.Log.addEntry(s, entry));
+      if (isSyncEnabled(auth, state)) {
+        window.WriteBehind.enqueue({
+          table: "day_entries",
+          op: "upsert",
+          payload: buildEntryRow(entry, auth.user.id, state.currentDate),
+          rollback: () => setState(s => Modules.Log.removeEntry(s, entry.id))
+        });
+      }
     });
     if (Object.values(checkedSupps).some(Boolean)) {
       const count = Object.values(checkedSupps).filter(Boolean).length;
@@ -963,7 +1106,7 @@ function LogDaySheet({
   }, /*#__PURE__*/React.createElement("h3", {
     className: "font-headline text-base font-semibold"
   }, "Ingredients"), ingredientStates.map((ing, idx) => {
-    const ingData = INGREDIENTS[ing.id];
+    const ingData = Modules.Catalog.getIngredient(ing.id);
     if (!ingData) return null;
     return /*#__PURE__*/React.createElement("div", {
       key: idx,
@@ -972,7 +1115,7 @@ function LogDaySheet({
       className: "flex items-center justify-between"
     }, /*#__PURE__*/React.createElement("span", {
       className: "text-sm font-semibold"
-    }, ingData.name), ing.swapGroup && SWAP_GROUPS[ing.swapGroup] && /*#__PURE__*/React.createElement(SwapDropdown, {
+    }, ingData.name), ing.swapGroup && Modules.Catalog.getSwapGroup(ing.swapGroup) && /*#__PURE__*/React.createElement(SwapDropdown, {
       group: ing.swapGroup,
       currentId: ing.id,
       onSwap: newId => swapIngredient(idx, newId)
@@ -1052,7 +1195,7 @@ function SwapDropdown({
   onSwap
 }) {
   const [open, setOpen] = useState(false);
-  const options = SWAP_GROUPS[group] || [];
+  const options = Modules.Catalog.getSwapGroup(group) || [];
   if (options.length <= 1) return null;
   return /*#__PURE__*/React.createElement("div", {
     className: "relative"
@@ -1062,7 +1205,7 @@ function SwapDropdown({
   }, "Change"), open && /*#__PURE__*/React.createElement("div", {
     className: "absolute right-0 top-6 z-20 bg-surface-container-highest rounded-xl border border-on-surface/10 shadow-xl overflow-hidden min-w-[160px]"
   }, options.map(optId => {
-    const ing = INGREDIENTS[optId];
+    const ing = Modules.Catalog.getIngredient(optId);
     if (!ing) return null;
     return /*#__PURE__*/React.createElement("button", {
       key: optId,
@@ -1300,103 +1443,17 @@ function InsightsScreen() {
   const isDark = state.themeMode === "dark" || state.themeMode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches;
 
   // Build days array from history + today
-  const days = useMemo(() => {
-    const hist = (state.dayHistory || []).map(d => ({
-      date: d.date,
-      totals: d.totals || emptyNutrients(),
-      gapsClosed: d.gapsClosed || 0,
-      energy: d.energy ?? null,
-      digestion: d.digestion ?? null
-    }));
-    if ((state.dayLog || []).length > 0) {
-      const today = state.currentDate || todayStr();
-      // Don't duplicate if today is already in history
-      if (!hist.some(d => d.date === today)) {
-        hist.push({
-          date: today,
-          totals: {
-            ...runningTotals
-          },
-          gapsClosed: gapsClosed,
-          energy: null,
-          digestion: null
-        });
-      }
-    }
-    hist.sort((a, b) => a.date.localeCompare(b.date));
-    return hist;
-  }, [state.dayHistory, state.dayLog, state.currentDate, runningTotals, gapsClosed]);
+  const days = useMemo(() => Modules.Insights.buildDays(state, runningTotals, gapsClosed), [state.dayHistory, state.dayLog, state.currentDate, runningTotals, gapsClosed]);
   const sliced = useMemo(() => days.slice(-range), [days, range]);
   const heatmapGridStyle = useMemo(() => ({
     gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))"
   }), [sliced.length]);
 
   // Report card stats
-  const stats = useMemo(() => {
-    if (sliced.length === 0) return null;
-    const avgGaps = sliced.reduce((s, d) => s + d.gapsClosed, 0) / sliced.length;
-    const energyDays = sliced.filter(d => d.energy !== null);
-    const digestDays = sliced.filter(d => d.digestion !== null);
-    const avgEnergy = energyDays.length > 0 ? energyDays.reduce((s, d) => s + d.energy, 0) / energyDays.length : null;
-    const avgDigestion = digestDays.length > 0 ? digestDays.reduce((s, d) => s + d.digestion, 0) / digestDays.length : null;
-
-    // Per-nutrient hit rate
-    const hitCounts = {};
-    NUTRIENT_KEYS.forEach(k => {
-      hitCounts[k] = 0;
-    });
-    sliced.forEach(d => {
-      NUTRIENT_KEYS.forEach(k => {
-        if (getStatus(k, d.totals[k] || 0).closed) hitCounts[k]++;
-      });
-    });
-    const hitRate = {};
-    NUTRIENT_KEYS.forEach(k => {
-      hitRate[k] = hitCounts[k] / sliced.length;
-    });
-    const topHits = NUTRIENT_KEYS.filter(k => hitRate[k] >= 0.8).sort((a, b) => hitRate[b] - hitRate[a]);
-    const chronicGaps = NUTRIENT_KEYS.filter(k => hitRate[k] <= 0.3).sort((a, b) => hitRate[a] - hitRate[b]);
-    return {
-      avgGaps,
-      avgEnergy,
-      avgDigestion,
-      topHits,
-      chronicGaps,
-      hitRate
-    };
-  }, [sliced]);
+  const stats = useMemo(() => Modules.Insights.aggregate(sliced), [sliced]);
 
   // Heatmap data: nutrientKey -> array of { pct, value, date }
-  const heatmapData = useMemo(() => {
-    const data = {};
-    const groups = [{
-      label: "Macros",
-      keys: MACRO_KEYS
-    }, {
-      label: "Vitamins",
-      keys: VITAMIN_KEYS
-    }, {
-      label: "Minerals",
-      keys: MINERAL_KEYS
-    }];
-    groups.forEach(g => {
-      g.keys.forEach(k => {
-        const isMaxType = OBJECTIVES[k] && OBJECTIVES[k].type === "maximum";
-        data[k] = sliced.map(d => {
-          const val = d.totals[k] || 0;
-          const s = getStatus(k, val);
-          return {
-            pct: s.pct,
-            value: val,
-            date: d.date,
-            closed: s.closed,
-            color: heatmapColor(s.pct, isDark, isMaxType)
-          };
-        });
-      });
-    });
-    return data;
-  }, [sliced, isDark]);
+  const heatmapData = useMemo(() => Modules.Insights.buildHeatmap(sliced, isDark, heatmapColor), [sliced, isDark]);
   const formatShortDate = dateStr => {
     const d = new Date(dateStr + "T12:00:00");
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -1572,9 +1629,69 @@ function SettingsScreen() {
     state,
     setState
   } = useNutrition();
+  const auth = useAuth();
   const [editingKey, setEditingKey] = useState(false);
   const [keyInput, setKeyInput] = useState(apiKey);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
+  const [signInEmail, setSignInEmail] = useState("");
+  const [signInPassword, setSignInPassword] = useState("");
+  const [signInError, setSignInError] = useState("");
+  const [signInBusy, setSignInBusy] = useState(false);
+  const cloudSyncOn = !!state.cloudSync;
+  const signedIn = auth && auth.status === "signed_in";
+  const handleCloudSyncToggle = () => {
+    if (cloudSyncOn) {
+      // Turn off — keep session intact; user can re-enable without re-auth.
+      setState(s => ({
+        ...s,
+        cloudSync: false
+      }));
+    } else {
+      if (!auth || !auth.configured) {
+        setSignInError("Cloud sync is not configured yet.");
+        setShowSignIn(true);
+        return;
+      }
+      if (signedIn) {
+        setState(s => ({
+          ...s,
+          cloudSync: true
+        }));
+      } else {
+        setSignInError("");
+        setShowSignIn(true);
+      }
+    }
+  };
+  const handleSignInSubmit = async e => {
+    e.preventDefault();
+    setSignInError("");
+    setSignInBusy(true);
+    try {
+      await auth.signIn(signInEmail.trim(), signInPassword);
+      setState(s => ({
+        ...s,
+        cloudSync: true
+      }));
+      setShowSignIn(false);
+      setSignInEmail("");
+      setSignInPassword("");
+    } catch (err) {
+      setSignInError(err && err.message || "Sign-in failed.");
+    } finally {
+      setSignInBusy(false);
+    }
+  };
+  const handleSignOut = async () => {
+    try {
+      await auth.signOut();
+    } catch (_) {/* ignore */}
+    setState(s => ({
+      ...s,
+      cloudSync: false
+    }));
+  };
   const maskedKey = apiKey ? "\u2022\u2022\u2022\u2022" + apiKey.slice(-4) : "Not set";
   const handleSaveKey = () => {
     setApiKey(keyInput);
@@ -1596,8 +1713,8 @@ function SettingsScreen() {
     URL.revokeObjectURL(url);
   };
   const handleClear = () => {
-    localStorage.removeItem(STORAGE_KEY_V2);
-    localStorage.removeItem(API_KEY_STORAGE);
+    LocalStore.clearState();
+    LocalStore.clearApiKey();
     setState({
       ...DEFAULT_STATE
     });
@@ -1720,6 +1837,51 @@ function SettingsScreen() {
     className: "space-y-1"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "text-xs font-semibold text-on-surface-variant tracking-wide px-1 mb-2 font-label"
+  }, "Cloud Sync"), /*#__PURE__*/React.createElement("div", {
+    className: "glass-card rounded-xl overflow-hidden"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-4 py-3.5 flex items-center gap-3 min-h-[3.5rem]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-9 h-9 rounded-xl bg-cyan-600/20 flex items-center justify-center"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: cloudSyncOn ? "cloud_done" : "cloud_off",
+    size: 18,
+    className: "text-cyan-400"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold"
+  }, "Cloud Sync"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-on-surface-variant"
+  }, cloudSyncOn ? signedIn ? `Signed in as ${auth.user && auth.user.email}` : "Signed out" : "Off — data stays on this device")), /*#__PURE__*/React.createElement("button", {
+    onClick: handleCloudSyncToggle,
+    "data-testid": "cloud-sync-toggle",
+    "aria-pressed": cloudSyncOn ? "true" : "false",
+    className: `w-11 h-6 rounded-full transition-colors flex items-center px-0.5 ${cloudSyncOn ? "bg-blue-600" : "bg-on-surface/15"}`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: `block w-5 h-5 rounded-full bg-white transition-transform ${cloudSyncOn ? "translate-x-5" : "translate-x-0"}`
+  }))), cloudSyncOn && signedIn && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "mx-4 h-[0.5px] bg-on-surface/5"
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: handleSignOut,
+    "data-testid": "cloud-sync-signout",
+    className: "w-full px-4 py-3.5 flex items-center gap-3 text-left hover:bg-on-surface/5 transition"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "w-9 h-9 rounded-xl bg-on-surface/5 flex items-center justify-center"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "logout",
+    size: 18,
+    className: "text-on-surface-variant"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "text-sm font-semibold"
+  }, "Sign Out"), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-on-surface-variant"
+  }, "Disable cloud sync on this device")))))), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "text-xs font-semibold text-on-surface-variant tracking-wide px-1 mb-2 font-label"
   }, "Data & Privacy"), /*#__PURE__*/React.createElement("div", {
     className: "glass-card rounded-xl overflow-hidden"
   }, /*#__PURE__*/React.createElement("button", {
@@ -1754,7 +1916,58 @@ function SettingsScreen() {
     className: "text-sm font-semibold text-error"
   }, "Clear All Data"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-on-surface-variant"
-  }, "Remove all stored data"))))), showClearConfirm && /*#__PURE__*/React.createElement("div", {
+  }, "Remove all stored data"))))), showSignIn && /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-6 animate-fade-in",
+    "data-testid": "cloud-signin-modal"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-sm",
+    onClick: () => setShowSignIn(false)
+  }), /*#__PURE__*/React.createElement("form", {
+    onSubmit: handleSignInSubmit,
+    className: "glass-sheet squircle p-6 w-full max-w-xs relative z-10 space-y-4",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-headline text-lg font-bold"
+  }, "Sign in to Cloud Sync"), (!auth || !auth.configured) && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-on-surface-variant",
+    "data-testid": "cloud-signin-unconfigured"
+  }, "Cloud sync is not configured yet. Ask the project owner to provision Supabase credentials."), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "email",
+    placeholder: "Email",
+    value: signInEmail,
+    onChange: e => setSignInEmail(e.target.value),
+    autoComplete: "email",
+    required: true,
+    disabled: !auth || !auth.configured || signInBusy,
+    className: "w-full bg-on-surface/5 rounded-lg px-3 py-2 text-sm"
+  }), /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    placeholder: "Password",
+    value: signInPassword,
+    onChange: e => setSignInPassword(e.target.value),
+    autoComplete: "current-password",
+    required: true,
+    disabled: !auth || !auth.configured || signInBusy,
+    className: "w-full bg-on-surface/5 rounded-lg px-3 py-2 text-sm"
+  })), signInError && /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-error",
+    "data-testid": "cloud-signin-error"
+  }, signInError), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-3"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      setShowSignIn(false);
+      setSignInError("");
+    },
+    className: "flex-1 py-2.5 rounded-full border border-on-surface/10 text-sm font-semibold hover:bg-on-surface/5 transition"
+  }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+    type: "submit",
+    disabled: !auth || !auth.configured || signInBusy,
+    className: "flex-1 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 transition disabled:opacity-50"
+  }, signInBusy ? "Signing in…" : "Sign In")))), showClearConfirm && /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 flex items-center justify-center p-6 animate-fade-in"
   }, /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-sm",
@@ -1790,7 +2003,7 @@ function App() {
       setActiveTab(tab);
     }
   }, [activeTab, showLogSheet]);
-  return /*#__PURE__*/React.createElement(NutritionProvider, null, /*#__PURE__*/React.createElement(ToastProvider, null, /*#__PURE__*/React.createElement(AppHeader, null), activeTab === "home" && /*#__PURE__*/React.createElement(HomeScreen, {
+  return /*#__PURE__*/React.createElement(NutritionProvider, null, /*#__PURE__*/React.createElement(AuthProvider, null, /*#__PURE__*/React.createElement(ToastProvider, null, /*#__PURE__*/React.createElement(CloudSync, null), /*#__PURE__*/React.createElement(AppHeader, null), activeTab === "home" && /*#__PURE__*/React.createElement(HomeScreen, {
     onOpenLog: () => setShowLogSheet(true),
     onTabChange: handleTabChange
   }), activeTab === "dashboard" && /*#__PURE__*/React.createElement(DashboardScreen, null), activeTab === "insights" && /*#__PURE__*/React.createElement(InsightsScreen, null), activeTab === "settings" && /*#__PURE__*/React.createElement(SettingsScreen, null), showLogSheet && /*#__PURE__*/React.createElement(LogDaySheet, {
@@ -1798,7 +2011,7 @@ function App() {
   }), /*#__PURE__*/React.createElement(Toast, null), /*#__PURE__*/React.createElement(BottomNav, {
     activeTab: activeTab,
     onTabChange: handleTabChange
-  })));
+  }))));
 }
 
 // ============================================================

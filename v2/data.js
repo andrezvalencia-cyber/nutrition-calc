@@ -538,38 +538,8 @@ function emptyNutrients() {
   return n;
 }
 
-function getIngNutrients(id, qty) {
-  var ing = INGREDIENTS[id];
-  if (!ing) return emptyNutrients();
-  var ratio = qty / ing.defaultQty;
-  var n = {};
-  NUTRIENT_KEYS.forEach(function(k) { n[k] = (ing[k] || 0) * ratio; });
-  return n;
-}
-
-function computeMealNutrients(recipe, states) {
-  if (!recipe || !states.length) return emptyNutrients();
-  var hasMod = states.some(function(s, i) {
-    var o = recipe.ingredients[i];
-    if (!o) return true;
-    return s.id !== o.id || s.qty !== (INGREDIENTS[o.id] ? INGREDIENTS[o.id].defaultQty : 1);
-  });
-  if (!hasMod) return Object.assign({}, recipe.verifiedTotal);
-  var t = Object.assign({}, recipe.verifiedTotal);
-  states.forEach(function(s, i) {
-    var o = recipe.ingredients[i];
-    if (!o) return;
-    var oi = INGREDIENTS[o.id];
-    if (!oi) return;
-    var oq = oi.defaultQty;
-    if (s.id !== o.id || s.qty !== oq) {
-      var on = getIngNutrients(o.id, oq);
-      var nn = getIngNutrients(s.id, s.qty);
-      NUTRIENT_KEYS.forEach(function(k) { t[k] = t[k] - on[k] + nn[k]; });
-    }
-  });
-  return t;
-}
+// getIngNutrients and computeMealNutrients moved to
+// src/modules/recipes/recipes.js (window.Modules.Recipes).
 
 function getStatus(key, value) {
   var obj = OBJECTIVES[key];
@@ -633,30 +603,10 @@ function computeCalories(totals) {
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
-// ============================================================
-// STORAGE — V2 uses separate key, no migration
-// ============================================================
-var STORAGE_KEY_V2 = "nutrition_calc_v2";
-var API_KEY_STORAGE = "nutrition_calc_v2_api_key";
+// Storage primitives moved to src/store/local-store.js (window.LocalStore).
+// MAX_QUICK_TEXT is a UI cap (prompt-injection blast-radius limit, see CLAUDE.md §8),
+// kept here as a data constant.
 var MAX_QUICK_TEXT = 500;
-
-function loadState() {
-  try {
-    var r = localStorage.getItem(STORAGE_KEY_V2);
-    return r ? JSON.parse(r) : null;
-  } catch(e) {
-    console.warn("Failed to load state, using defaults:", e);
-    return null;
-  }
-}
-
-function saveState(s) {
-  try {
-    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(s));
-  } catch(e) {
-    console.warn("Failed to save state:", e);
-  }
-}
 
 var DEFAULT_STATE = {
   currentDate: todayStr(),
@@ -667,4 +617,5 @@ var DEFAULT_STATE = {
   darkMode: true,
   themeMode: "dark",
   aiModel: "claude-sonnet-4-6",
+  cloudSync: false,
 };

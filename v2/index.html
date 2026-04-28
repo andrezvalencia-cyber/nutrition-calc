@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.anthropic.com; img-src 'self' data:; worker-src 'none'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.anthropic.com https://*.supabase.co; img-src 'self' data:; worker-src 'none'" />
   <title>Vitality — Nutrition Calculator</title>
 
   <!-- Preconnects: font origins + AI endpoint (early TLS handshake) -->
@@ -13,6 +13,7 @@
   <link rel="preconnect" href="https://api.anthropic.com" crossorigin />
 
   <!-- Preload local scripts so the parser discovers them during head parse -->
+  <link rel="preload" as="script" href="src/store/local-store.js" />
   <link rel="preload" as="script" href="data.js" />
   <link rel="preload" as="script" href="app.js" />
 
@@ -91,11 +92,53 @@
   <!-- Evict legacy V1 Service Worker and clear its caches -->
   <script src="sw-cleanup.js"></script>
 
+  <!-- Local persistence layer (window.LocalStore) -->
+  <script src="src/store/local-store.js"></script>
+
   <!-- Data Layer -->
   <script src="data.js"></script>
 
-  <!-- Tracer (OTLP/JSON console exporter) -->
-  <script src="tracer.js"></script>
+  <!-- Catalog accessor (window.Modules.Catalog) -->
+  <script src="src/modules/catalog/ingredients.js"></script>
+
+  <!-- Recipes (window.Modules.Recipes) -->
+  <script src="src/modules/recipes/recipes.js"></script>
+
+  <!-- Day log (window.Modules.Log) -->
+  <script src="src/modules/log/day-log.js"></script>
+
+  <!-- Gap engine (window.Modules.GapEngine) -->
+  <script src="src/modules/log/gap-engine.js"></script>
+
+  <!-- Carryover engine (window.Modules.Carryover) -->
+  <script src="src/modules/carryover/carryover-engine.js"></script>
+
+  <!-- Day history (window.Modules.History) — depends on Carryover -->
+  <script src="src/modules/history/day-history.js"></script>
+
+  <!-- Insights engine (window.Modules.Insights) -->
+  <script src="src/modules/insights/insights-engine.js"></script>
+
+  <!-- Tracer (OTLP/JSON console exporter + optional Supabase beacon) -->
+  <script src="src/modules/observability/tracer.js"></script>
+
+  <!-- Supabase project config (window.SupabaseConfig) -->
+  <script src="src/store/supabase-config.js"></script>
+
+  <!-- idb-keyval UMD (pinned + SRI) — used only for the write-behind offline queue -->
+  <script crossorigin="anonymous" integrity="sha384-oM43ZjLL5cj/w3ORvbvwAubendEp51/buLZ9CGEMjp5ExAxNxAC7N7GJ2X2Oreb9" src="https://unpkg.com/idb-keyval@6.2.1/dist/umd.js"></script>
+
+  <!-- Supabase JS UMD (pinned + SRI) -->
+  <script crossorigin="anonymous" integrity="sha384-OMZvx3Vy2g+m2/bV7wq4vKCSjS3P2+OVcOXSaqWaoK3ZoSAHaje1LSM9FK4MNk2J" src="https://unpkg.com/@supabase/supabase-js@2.105.0/dist/umd/supabase.js"></script>
+
+  <!-- Identity & auth wrapper (window.Modules.Identity) -->
+  <script src="src/modules/identity/auth.js"></script>
+
+  <!-- Remote (Supabase) read-only store (window.RemoteStore) -->
+  <script src="src/store/remote-store.js"></script>
+
+  <!-- Write-behind queue (window.WriteBehind) — Phase 5 -->
+  <script src="src/store/write-behind.js"></script>
 
   <!-- React 18 UMD -->
   <script crossorigin="anonymous" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>

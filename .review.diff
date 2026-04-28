@@ -1,0 +1,323 @@
+diff --git a/v2/app.js b/v2/app.js
+index 4cf41a2..b520418 100644
+--- a/v2/app.js
++++ b/v2/app.js
+@@ -53,11 +53,51 @@ function NutritionProvider({
+   const setState = useCallback(updater => {
+     setStateRaw(prev => {
+       const next = typeof updater === "function" ? updater(prev) : updater;
+-      saveState(next);
+       return next;
+     });
+   }, []);
+ 
++  // Persist state off the keystroke path: debounce 250ms and flush on unmount.
++  const saveTimerRef = useRef(null);
++  const latestStateRef = useRef(state);
++  const didMountRef = useRef(false);
++  useEffect(() => {
++    latestStateRef.current = state;
++  }, [state]);
++  useEffect(() => {
++    if (!didMountRef.current) {
++      didMountRef.current = true;
++      return;
++    }
++    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
++    saveTimerRef.current = setTimeout(() => {
++      saveTimerRef.current = null;
++      saveState(latestStateRef.current);
++    }, 250);
++    return () => {
++      if (saveTimerRef.current) {
++        clearTimeout(saveTimerRef.current);
++        saveTimerRef.current = null;
++      }
++    };
++  }, [state]);
++  useEffect(() => {
++    const flush = () => {
++      if (saveTimerRef.current) {
++        clearTimeout(saveTimerRef.current);
++        saveTimerRef.current = null;
++        saveState(latestStateRef.current);
++      }
++    };
++    window.addEventListener("pagehide", flush);
++    window.addEventListener("beforeunload", flush);
++    return () => {
++      window.removeEventListener("pagehide", flush);
++      window.removeEventListener("beforeunload", flush);
++      flush();
++    };
++  }, []);
++
+   // Apply theme mode to <html> classList
+   useEffect(() => {
+     const mode = state.themeMode || "dark";
+@@ -432,6 +472,7 @@ function HomeScreen({
+   const [aiLoading, setAiLoading] = useState(false);
+   const gaps = useMemo(() => getOpenGaps(runningTotals), [runningTotals]);
+   const handleAIEstimate = async () => {
++    if (aiLoading) return;
+     if (!quickText.trim()) return;
+     if (!apiKey) {
+       showToast({
+@@ -1233,6 +1274,9 @@ function InsightsScreen() {
+     return hist;
+   }, [state.dayHistory, state.dayLog, state.currentDate, runningTotals, gapsClosed]);
+   const sliced = useMemo(() => days.slice(-range), [days, range]);
++  const heatmapGridStyle = useMemo(() => ({
++    gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))"
++  }), [sliced.length]);
+ 
+   // Report card stats
+   const stats = useMemo(() => {
+@@ -1284,6 +1328,7 @@ function InsightsScreen() {
+     }];
+     groups.forEach(g => {
+       g.keys.forEach(k => {
++        const isMaxType = OBJECTIVES[k] && OBJECTIVES[k].type === "maximum";
+         data[k] = sliced.map(d => {
+           const val = d.totals[k] || 0;
+           const s = getStatus(k, val);
+@@ -1291,13 +1336,14 @@ function InsightsScreen() {
+             pct: s.pct,
+             value: val,
+             date: d.date,
+-            closed: s.closed
++            closed: s.closed,
++            color: heatmapColor(s.pct, isDark, isMaxType)
+           };
+         });
+       });
+     });
+     return data;
+-  }, [sliced]);
++  }, [sliced, isDark]);
+   const formatShortDate = dateStr => {
+     const d = new Date(dateStr + "T12:00:00");
+     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+@@ -1414,15 +1460,14 @@ function InsightsScreen() {
+   }, fmtVal(selectedCell.key, selectedCell.value), " / ", getTargetStr(selectedCell.key))), /*#__PURE__*/React.createElement("div", {
+     className: "text-xs text-on-surface-variant"
+   }, formatShortDate(selectedCell.date))), /*#__PURE__*/React.createElement("div", {
++    "data-testid": "nutrient-heatmap",
+     className: "overflow-x-auto -mx-1 px-1",
+     style: {
+       WebkitOverflowScrolling: "touch"
+     }
+   }, /*#__PURE__*/React.createElement("div", {
+     className: "heatmap-grid mb-1",
+-    style: {
+-      gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))"
+-    }
++    style: heatmapGridStyle
+   }, /*#__PURE__*/React.createElement("div", null), sliced.map((d, i) => /*#__PURE__*/React.createElement("div", {
+     key: i,
+     className: "heatmap-date"
+@@ -1433,20 +1478,17 @@ function InsightsScreen() {
+   }), /*#__PURE__*/React.createElement("div", {
+     className: "text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-1 pl-1"
+   }, group.label), group.keys.map(k => {
+-    const isMaxType = OBJECTIVES[k] && OBJECTIVES[k].type === "maximum";
+     return /*#__PURE__*/React.createElement("div", {
+       key: k,
+       className: "heatmap-grid mb-0.5",
+-      style: {
+-        gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))"
+-      }
++      style: heatmapGridStyle
+     }, /*#__PURE__*/React.createElement("div", {
+       className: "heatmap-label text-on-surface-variant"
+     }, NUTRIENT_LABELS[k]), heatmapData[k].map((cell, ci) => /*#__PURE__*/React.createElement("div", {
+       key: ci,
+       className: "heatmap-cell cursor-pointer",
+       style: {
+-        backgroundColor: heatmapColor(cell.pct, isDark, isMaxType)
++        backgroundColor: cell.color
+       },
+       onClick: () => setSelectedCell(selectedCell && selectedCell.key === k && selectedCell.date === cell.date ? null : {
+         key: k,
+diff --git a/v2/src/app.jsx b/v2/src/app.jsx
+index 62c5a49..3c2a45f 100644
+--- a/v2/src/app.jsx
++++ b/v2/src/app.jsx
+@@ -22,11 +22,46 @@
+       const setState = useCallback((updater) => {
+         setStateRaw((prev) => {
+           const next = typeof updater === "function" ? updater(prev) : updater;
+-          saveState(next);
+           return next;
+         });
+       }, []);
+ 
++      // Persist state off the keystroke path: debounce 250ms and flush on unmount.
++      const saveTimerRef = useRef(null);
++      const latestStateRef = useRef(state);
++      const didMountRef = useRef(false);
++      useEffect(() => { latestStateRef.current = state; }, [state]);
++      useEffect(() => {
++        if (!didMountRef.current) { didMountRef.current = true; return; }
++        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
++        saveTimerRef.current = setTimeout(() => {
++          saveTimerRef.current = null;
++          saveState(latestStateRef.current);
++        }, 250);
++        return () => {
++          if (saveTimerRef.current) {
++            clearTimeout(saveTimerRef.current);
++            saveTimerRef.current = null;
++          }
++        };
++      }, [state]);
++      useEffect(() => {
++        const flush = () => {
++          if (saveTimerRef.current) {
++            clearTimeout(saveTimerRef.current);
++            saveTimerRef.current = null;
++            saveState(latestStateRef.current);
++          }
++        };
++        window.addEventListener("pagehide", flush);
++        window.addEventListener("beforeunload", flush);
++        return () => {
++          window.removeEventListener("pagehide", flush);
++          window.removeEventListener("beforeunload", flush);
++          flush();
++        };
++      }, []);
++
+       // Apply theme mode to <html> classList
+       useEffect(() => {
+         const mode = state.themeMode || "dark";
+@@ -302,6 +337,7 @@
+       const gaps = useMemo(() => getOpenGaps(runningTotals), [runningTotals]);
+ 
+       const handleAIEstimate = async () => {
++        if (aiLoading) return;
+         if (!quickText.trim()) return;
+         if (!apiKey) {
+           showToast({ text: "Set your Claude API key in Settings first" });
+@@ -1084,6 +1120,11 @@
+ 
+       const sliced = useMemo(() => days.slice(-range), [days, range]);
+ 
++      const heatmapGridStyle = useMemo(
++        () => ({ gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))" }),
++        [sliced.length]
++      );
++
+       // Report card stats
+       const stats = useMemo(() => {
+         if (sliced.length === 0) return null;
+@@ -1126,15 +1167,22 @@
+         ];
+         groups.forEach(g => {
+           g.keys.forEach(k => {
++            const isMaxType = OBJECTIVES[k] && OBJECTIVES[k].type === "maximum";
+             data[k] = sliced.map(d => {
+               const val = d.totals[k] || 0;
+               const s = getStatus(k, val);
+-              return { pct: s.pct, value: val, date: d.date, closed: s.closed };
++              return {
++                pct: s.pct,
++                value: val,
++                date: d.date,
++                closed: s.closed,
++                color: heatmapColor(s.pct, isDark, isMaxType),
++              };
+             });
+           });
+         });
+         return data;
+-      }, [sliced]);
++      }, [sliced, isDark]);
+ 
+       const formatShortDate = (dateStr) => {
+         const d = new Date(dateStr + "T12:00:00");
+@@ -1274,11 +1322,11 @@
+             )}
+ 
+             {/* Heatmap Grid */}
+-            <div className="overflow-x-auto -mx-1 px-1" style={{ WebkitOverflowScrolling: "touch" }}>
++            <div data-testid="nutrient-heatmap" className="overflow-x-auto -mx-1 px-1" style={{ WebkitOverflowScrolling: "touch" }}>
+               {/* Date headers */}
+               <div
+                 className="heatmap-grid mb-1"
+-                style={{ gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))" }}
++                style={heatmapGridStyle}
+               >
+                 <div></div>
+                 {sliced.map((d, i) => (
+@@ -1298,12 +1346,11 @@
+                     {group.label}
+                   </div>
+                   {group.keys.map(k => {
+-                    const isMaxType = OBJECTIVES[k] && OBJECTIVES[k].type === "maximum";
+                     return (
+                       <div
+                         key={k}
+                         className="heatmap-grid mb-0.5"
+-                        style={{ gridTemplateColumns: "72px repeat(" + sliced.length + ", minmax(20px, 36px))" }}
++                        style={heatmapGridStyle}
+                       >
+                         <div className="heatmap-label text-on-surface-variant">
+                           {NUTRIENT_LABELS[k]}
+@@ -1312,7 +1359,7 @@
+                           <div
+                             key={ci}
+                             className="heatmap-cell cursor-pointer"
+-                            style={{ backgroundColor: heatmapColor(cell.pct, isDark, isMaxType) }}
++                            style={{ backgroundColor: cell.color }}
+                             onClick={() => setSelectedCell(
+                               selectedCell && selectedCell.key === k && selectedCell.date === cell.date
+                                 ? null
+diff --git a/v2/tests/integration.test.js b/v2/tests/integration.test.js
+index f1e6c92..46c4b41 100644
+--- a/v2/tests/integration.test.js
++++ b/v2/tests/integration.test.js
+@@ -134,6 +134,43 @@ test('quick entry caps outbound prompt content at MAX_QUICK_TEXT', async ({ page
+   expect(capturedBody.messages[0].content.length).toBeLessThanOrEqual(MAX);
+ });
+ 
++// ── Performance: heatmap render stays under 1s with 30 days seeded ───────────
++
++test('insights heatmap renders in under 1s with 30 days of history', async ({ page }) => {
++  const ZERO = {
++    protein: 0, carbs: 0, fat: 0, fiber: 0, sat_fat: 0, epa_dha: 0,
++    calcium: 0, iron: 0, zinc: 0, vit_d: 0, vit_e: 0, b12: 0,
++    folate: 0, vit_c: 0, potassium: 0, magnesium: 0,
++  };
++  await page.addInitScript((zero) => {
++    const days = Array.from({ length: 30 }, (_, i) => {
++      const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
++      const totals = {};
++      Object.keys(zero).forEach((k) => { totals[k] = Math.random() * 200; });
++      return { date: d, totals, gapsClosed: Math.floor(Math.random() * 16), energy: 3, digestion: 3 };
++    });
++    localStorage.setItem('nutrition_calc_v2', JSON.stringify({
++      currentDate: new Date().toISOString().slice(0, 10),
++      dayLog: [],
++      fatSolubleCarryover: { b12: 0, vit_e: 0, vit_d: 0 },
++      carryoverDaysRemaining: { b12: 0, vit_e: 0 },
++      dayHistory: days,
++      themeMode: 'dark',
++      aiModel: 'claude-sonnet-4-6',
++    }));
++  }, ZERO);
++
++  await page.goto('/');
++  await page.waitForSelector('nav button', { timeout: 8000 });
++  // Insights tab is the third nav button (Home, Dashboard, Insights, Settings).
++  const navButtons = page.locator('nav button');
++  const t0 = Date.now();
++  await navButtons.nth(2).click();
++  await page.waitForSelector('[data-testid="nutrient-heatmap"]', { timeout: 2000 });
++  const elapsed = Date.now() - t0;
++  expect(elapsed).toBeLessThan(1000);
++});
++
+ // ── Security regression: React UMD pinned + SRI ──────────────────────────────
+ 
+ test('unpkg <script> tags are pinned and carry SRI integrity', async ({ page }) => {
