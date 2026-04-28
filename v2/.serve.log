@@ -1,0 +1,1443 @@
+ INFO  Accepting connections at http://localhost:8765
+ HTTP  4/27/2026 9:41:20 PM ::1 GET /
+ HTTP  4/27/2026 9:41:20 PM ::1 Returned 200 in 6 ms
+ HTTP  4/27/2026 9:41:21 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:41:21 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:41:21 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:41:21 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:21 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:41:21 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:21 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:41:21 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:41:21 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:41:21 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:41:21 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:41:21 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:21 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:41:21 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:21 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:41:21 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:21 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:41:21 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:41:21 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:41:21 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:41:22 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:41:22 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:41:22 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:41:22 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:41:22 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:41:22 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:41:22 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:41:22 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:22 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:41:22 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:23 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:41:23 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:41:23 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:41:23 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:41:45 PM ::1 GET /
+ HTTP  4/27/2026 9:41:45 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:45 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:41:45 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:41:45 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:41:45 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:45 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:41:45 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:41:45 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:41:45 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:45 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:41:45 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:41:45 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:41:45 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:41:46 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:41:46 PM ::1 Returned 200 in 3 ms
+ HTTP  4/27/2026 9:41:46 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:41:46 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:46 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:41:46 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:46 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:41:46 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:46 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:41:46 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:46 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:41:46 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:47 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:41:47 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:47 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:41:47 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:47 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:41:47 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:48 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:41:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:41:48 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:41:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:09 PM ::1 GET /
+ HTTP  4/27/2026 9:42:09 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:42:10 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:42:10 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:42:10 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:42:10 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:42:10 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:42:10 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:10 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:42:10 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:10 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:42:10 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:42:10 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:42:10 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:42:10 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:42:10 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:10 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:42:10 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:10 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:42:10 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:10 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:42:10 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:11 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:42:11 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:11 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:42:11 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:11 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:42:11 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:11 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:42:11 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:42:11 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:42:11 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:12 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:42:12 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:12 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:42:12 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:34 PM ::1 GET /
+ HTTP  4/27/2026 9:42:34 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:42:34 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:42:34 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:34 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:42:34 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:42:34 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:42:34 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:34 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:34 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:42:34 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:34 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:42:34 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:42:34 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:34 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:42:34 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:42:34 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:42:34 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:35 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:42:35 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:35 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:42:35 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:35 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:42:35 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:35 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:42:35 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:42:35 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:42:35 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:35 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:42:35 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:36 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:42:36 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:37 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:42:37 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:37 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:42:37 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:42:59 PM ::1 GET /
+ HTTP  4/27/2026 9:42:59 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:42:59 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:42:59 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:42:59 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:42:59 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:42:59 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:59 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:42:59 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:42:59 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:42:59 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:42:59 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:42:59 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:42:59 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:42:59 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:42:59 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:43:00 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:43:00 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:00 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:43:00 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:00 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:43:00 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:43:00 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:43:00 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:43:00 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:43:00 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:00 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:43:00 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:01 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:43:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:01 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:43:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:01 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:43:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:02 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:43:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:23 PM ::1 GET /
+ HTTP  4/27/2026 9:43:23 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:23 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:43:23 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:43:23 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:43:23 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:23 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:23 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:43:23 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:23 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:43:23 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:43:23 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:43:23 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:43:23 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:24 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:43:24 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:43:24 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:43:24 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:24 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:43:24 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:24 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:43:24 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:24 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:43:24 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:25 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:43:25 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:43:25 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:43:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:25 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:43:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:25 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:43:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:26 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:43:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:26 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:43:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:48 PM ::1 GET /
+ HTTP  4/27/2026 9:43:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:48 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:43:48 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:43:48 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:43:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:48 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:43:48 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:43:48 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:43:48 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:43:48 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:43:48 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:43:48 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:43:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:48 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:43:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:48 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:43:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:48 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:43:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:49 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:43:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:49 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:43:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:49 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:43:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:49 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:43:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:49 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:43:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:50 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:43:50 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:43:50 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:43:50 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:12 PM ::1 GET /
+ HTTP  4/27/2026 9:44:12 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:12 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:44:12 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:44:12 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:12 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:12 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:44:12 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:44:12 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:12 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:44:12 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:44:12 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:44:12 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:44:12 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:44:12 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:44:12 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:12 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:44:12 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:13 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:44:13 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:13 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:44:13 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:13 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:44:13 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:13 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:44:13 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:13 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:44:13 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:13 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:44:13 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:14 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:44:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:14 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:44:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:14 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:44:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:36 PM ::1 GET /
+ HTTP  4/27/2026 9:44:36 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:44:36 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:44:36 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:44:36 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:44:36 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:36 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:44:36 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:44:36 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:36 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:36 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:44:36 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:44:36 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:44:36 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:44:37 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:44:37 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:44:37 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:44:37 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:44:37 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:44:37 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:37 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:44:37 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:37 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:44:37 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:37 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:44:37 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:38 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:44:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:38 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:44:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:38 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:44:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:39 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:44:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:44:39 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:44:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:00 PM ::1 GET /
+ HTTP  4/27/2026 9:45:00 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:45:01 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:45:01 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:45:01 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:45:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:01 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:45:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:01 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:45:01 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:45:01 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:45:01 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:45:01 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:45:01 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:45:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:01 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:45:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:01 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:45:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:01 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:45:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:02 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:45:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:02 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:45:02 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:45:02 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:45:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:02 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:45:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:02 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:45:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:03 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:45:03 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:03 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:45:03 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:45:25 PM ::1 GET /
+ HTTP  4/27/2026 9:45:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:25 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:45:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:25 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:45:25 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:45:25 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:45:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:25 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:45:25 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:45:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:25 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:45:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:25 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:45:25 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:45:26 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:45:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:26 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:45:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:26 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:45:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:26 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:45:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:26 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:45:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:26 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:45:26 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:45:27 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:45:27 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:27 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:45:27 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:27 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:45:27 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:49 PM ::1 GET /
+ HTTP  4/27/2026 9:45:49 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:45:49 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:45:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:49 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:45:49 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:45:49 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:45:49 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:45:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:49 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:45:49 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:45:49 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:45:50 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:45:50 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:45:50 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:45:50 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:45:50 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:45:50 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:45:50 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:45:50 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:50 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:45:50 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:50 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:45:50 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:51 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:45:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:51 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:45:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:51 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:45:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:52 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:45:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:45:52 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:45:52 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:13 PM ::1 GET /
+ HTTP  4/27/2026 9:46:13 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:14 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:46:14 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:46:14 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:46:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:14 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:46:14 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:14 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:46:14 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:46:14 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:14 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:46:14 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:46:14 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:46:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:14 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:46:14 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:14 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:46:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:15 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:46:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:15 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:46:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:15 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:46:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:15 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:46:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:15 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:46:15 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:16 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:46:16 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:16 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:46:16 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:38 PM ::1 GET /
+ HTTP  4/27/2026 9:46:38 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:38 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:46:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:38 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:46:38 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:46:38 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:46:38 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:46:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:38 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:38 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:38 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:46:38 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:38 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:46:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:38 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:46:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:39 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:46:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:39 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:46:39 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:39 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:46:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:39 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:46:39 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:46:39 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:46:39 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:39 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:46:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:46:39 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:46:39 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:46:40 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:46:40 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:46:40 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:46:40 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:02 PM ::1 GET /
+ HTTP  4/27/2026 9:47:02 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:02 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:47:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:02 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:47:02 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:47:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:02 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:47:02 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:47:02 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:02 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:47:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:02 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:02 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:47:02 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:03 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:47:03 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:03 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:47:03 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:03 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:47:03 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:03 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:47:03 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:03 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:47:03 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:03 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:47:03 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:04 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:47:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:04 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:47:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:04 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:47:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:05 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:47:05 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:26 PM ::1 GET /
+ HTTP  4/27/2026 9:47:26 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:26 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:47:26 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:47:26 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:47:26 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:26 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:26 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:26 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:47:26 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:26 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:47:26 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:47:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:26 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:27 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:47:27 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:27 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:47:27 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:47:27 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:47:27 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:27 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:47:27 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:27 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:47:27 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:28 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:47:28 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:28 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:47:28 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:28 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:47:28 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:28 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:47:28 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:29 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:47:29 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:29 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:47:29 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:51 PM ::1 GET /
+ HTTP  4/27/2026 9:47:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:51 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:47:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:51 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:47:51 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:47:51 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:47:51 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:51 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:47:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:51 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:47:51 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:51 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:47:51 PM ::1 Returned 200 in 5 ms
+ HTTP  4/27/2026 9:47:51 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:47:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:51 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:47:51 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:47:52 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:47:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:52 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:47:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:52 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:47:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:52 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:47:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:52 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:47:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:52 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:47:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:53 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:47:53 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:47:53 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:47:53 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:15 PM ::1 GET /
+ HTTP  4/27/2026 9:48:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:15 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:48:15 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:48:15 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:48:15 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:48:15 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:48:15 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:48:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:15 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:48:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:15 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:48:15 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:48:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:16 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:48:16 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:48:16 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:48:16 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:16 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:48:16 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:16 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:48:16 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:16 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:48:16 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:48:16 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:48:16 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:17 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:48:17 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:17 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:48:17 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:48:17 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:48:17 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:18 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:48:18 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:39 PM ::1 GET /
+ HTTP  4/27/2026 9:48:39 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:48:39 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:48:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:39 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:48:39 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:48:39 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:48:39 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:48:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:39 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:48:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:39 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:48:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:40 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:48:40 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:48:40 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:48:40 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:40 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:48:40 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:40 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:48:40 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:40 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:48:40 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:41 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:48:41 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:48:41 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:48:41 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:48:41 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:48:41 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:48:41 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:48:41 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:48:42 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:48:42 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:48:42 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:48:42 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:49:04 PM ::1 GET /
+ HTTP  4/27/2026 9:49:04 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:49:04 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:49:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:04 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:49:04 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:49:04 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:49:04 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:49:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:04 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:49:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:04 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:49:04 PM ::1 Returned 200 in 3 ms
+ HTTP  4/27/2026 9:49:04 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:49:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:04 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:49:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:05 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:49:05 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:05 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:49:05 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:05 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:49:05 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:49:05 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:49:05 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:05 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:49:05 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:05 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:49:05 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:06 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:49:06 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:06 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:49:06 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:49:28 PM ::1 GET /
+ HTTP  4/27/2026 9:49:28 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:28 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:49:28 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:49:28 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:49:28 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:49:28 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:49:28 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:49:28 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:28 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:28 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:28 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:28 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:49:28 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:49:28 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:49:28 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:49:28 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:49:28 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:29 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:49:29 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:29 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:49:29 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:29 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:49:29 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:29 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:49:29 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:29 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:49:29 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:29 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:49:29 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:30 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:49:30 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:30 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:49:30 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:30 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:49:30 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:51 PM ::1 GET /
+ HTTP  4/27/2026 9:49:51 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:49:51 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:49:51 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:49:51 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:49:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:51 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:49:51 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:49:51 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:49:51 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:49:51 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:49:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:51 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:49:51 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:49:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:51 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:49:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:51 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:49:51 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:52 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:49:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:52 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:49:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:52 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:49:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:52 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:49:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:52 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:49:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:52 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:49:52 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:53 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:49:53 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:49:53 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:49:53 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:13 PM ::1 GET /
+ HTTP  4/27/2026 9:50:13 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:50:14 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:50:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:14 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:50:14 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:50:14 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:50:14 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:50:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:14 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:50:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:14 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:50:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:14 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:50:14 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:50:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:14 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:50:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:14 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:50:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:14 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:50:14 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:15 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:50:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:15 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:50:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:15 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:50:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:15 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:50:15 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:50:15 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:50:15 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:16 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:50:16 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:16 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:50:16 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:36 PM ::1 GET /
+ HTTP  4/27/2026 9:50:36 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:36 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:50:36 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:50:36 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:50:36 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:50:36 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:50:36 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:50:36 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:36 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:50:36 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:36 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:50:36 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:50:36 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:50:37 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:50:37 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:37 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:50:37 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:37 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:50:37 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:37 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:50:37 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:50:37 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:50:37 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:38 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:50:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:38 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:50:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:38 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:50:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:38 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:50:38 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:39 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:50:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:39 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:50:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:59 PM ::1 GET /
+ HTTP  4/27/2026 9:50:59 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:59 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:50:59 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:50:59 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:50:59 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:50:59 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:50:59 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:50:59 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:50:59 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:50:59 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:50:59 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:50:59 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:50:59 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:51:00 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:51:00 PM ::1 Returned 200 in 4 ms
+ HTTP  4/27/2026 9:51:00 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:51:00 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:00 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:51:00 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:00 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:51:00 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:00 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:51:00 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:00 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:51:00 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:01 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:51:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:01 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:51:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:01 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:51:01 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:02 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:51:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:02 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:51:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:22 PM ::1 GET /
+ HTTP  4/27/2026 9:51:22 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:22 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:51:22 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:22 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:51:22 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:51:22 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:51:22 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:51:22 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:22 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:22 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:22 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:22 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:51:22 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:51:22 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:51:22 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:23 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:51:23 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:23 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:51:23 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:23 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:51:23 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:23 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:51:23 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:23 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:51:23 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:23 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:51:23 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:24 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:51:24 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:24 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:51:24 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:24 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:51:24 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:25 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:51:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:45 PM ::1 GET /
+ HTTP  4/27/2026 9:51:45 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:51:45 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:51:45 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:45 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:51:45 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:51:45 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:51:45 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:51:45 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:51:45 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:51:45 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:51:45 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:51:45 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:51:45 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:51:45 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:51:45 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:45 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:51:45 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:46 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:51:46 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:46 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:51:46 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:46 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:51:46 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:46 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:51:46 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:46 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:51:46 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:46 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:51:46 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:51:47 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:51:47 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:47 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:51:47 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:51:47 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:51:47 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:08 PM ::1 GET /
+ HTTP  4/27/2026 9:52:08 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:08 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:52:08 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:08 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:52:08 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:52:08 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:52:08 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:08 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:08 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:08 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:52:08 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:52:08 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:08 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:08 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:52:08 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:52:08 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:52:08 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:08 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:52:08 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:09 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:52:09 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:09 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:52:09 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:09 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:52:09 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:09 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:52:09 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:09 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:52:09 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:09 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:52:09 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:10 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:52:10 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:10 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:52:10 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:30 PM ::1 GET /
+ HTTP  4/27/2026 9:52:30 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:31 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:52:31 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:52:31 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:31 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:52:31 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:31 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:52:31 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:31 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:31 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:52:31 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:52:31 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:31 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:31 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:52:31 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:31 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:52:31 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:31 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:52:31 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:31 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:52:31 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:32 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:52:32 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:32 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:52:32 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:32 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:52:32 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:32 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:52:32 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:32 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:52:32 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:33 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:52:33 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:33 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:52:33 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:53 PM ::1 GET /
+ HTTP  4/27/2026 9:52:53 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:53 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:52:53 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:53 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:52:53 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:52:53 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:52:53 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:52:53 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:52:53 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:53 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:53 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:53 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:53 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:54 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:52:54 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:52:54 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:52:54 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:54 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:52:54 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:54 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:52:54 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:54 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:52:54 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:55 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:52:55 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:55 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:52:55 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:55 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:52:55 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:55 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:52:55 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:52:56 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:52:56 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:52:56 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:52:56 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:16 PM ::1 GET /
+ HTTP  4/27/2026 9:53:16 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:53:16 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:53:16 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:16 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:53:16 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:53:16 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:53:16 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:16 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:53:16 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:53:16 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:53:16 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:53:16 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:16 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:53:17 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:53:17 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:17 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:53:17 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:17 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:53:17 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:17 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:53:17 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:53:17 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:53:17 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:17 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:53:17 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:18 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:53:18 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:18 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:53:18 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:18 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:53:18 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:53:19 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:53:19 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:53:19 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:53:19 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:39 PM ::1 GET /
+ HTTP  4/27/2026 9:53:39 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:53:39 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:53:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:39 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:53:39 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:53:39 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:53:39 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:53:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:39 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:53:39 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:53:39 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:53:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:39 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:53:39 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:40 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:53:40 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:40 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:53:40 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:40 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:53:40 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:40 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:53:40 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:40 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:53:40 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:40 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:53:40 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:41 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:53:41 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:41 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:53:41 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:41 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:53:41 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:53:42 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:53:42 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:02 PM ::1 GET /
+ HTTP  4/27/2026 9:54:02 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:54:02 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:54:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:02 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:54:02 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:54:02 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:54:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:02 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:54:02 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:54:02 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:54:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:02 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:54:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:02 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:54:02 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:03 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:54:03 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:03 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:54:03 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:03 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:54:03 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:03 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:54:03 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:03 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:54:03 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:03 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:54:03 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:54:04 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:54:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:04 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:54:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:04 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:54:04 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:25 PM ::1 GET /
+ HTTP  4/27/2026 9:54:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:25 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:54:25 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:54:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:25 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:54:25 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:54:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:25 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:54:25 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:54:25 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:54:25 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:54:25 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:54:25 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:54:25 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:54:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:25 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:54:25 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:26 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:54:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:26 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:54:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:26 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:54:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:26 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:54:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:26 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:54:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:26 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:54:26 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:27 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:54:27 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:27 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:54:27 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:47 PM ::1 GET /
+ HTTP  4/27/2026 9:54:47 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:54:48 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:54:48 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:54:48 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:54:48 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:54:48 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:54:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:48 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:54:48 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:54:48 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:54:48 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:54:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:48 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:54:48 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:54:48 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:54:48 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:54:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:48 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:54:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:48 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:54:48 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:49 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:54:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:49 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:54:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:49 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:54:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:49 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:54:49 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:54:49 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:54:49 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:50 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:54:50 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:54:50 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:54:50 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:10 PM ::1 GET /
+ HTTP  4/27/2026 9:55:10 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:10 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:55:10 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:55:10 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:55:10 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:10 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:10 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:55:10 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:10 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:10 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:55:10 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:55:10 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:10 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:11 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:55:11 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:11 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:55:11 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:55:11 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:55:11 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:11 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:55:11 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:11 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:55:11 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:11 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:55:11 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:12 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:55:12 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:12 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:55:12 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:12 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:55:12 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:13 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:55:13 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:13 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:55:13 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:33 PM ::1 GET /
+ HTTP  4/27/2026 9:55:33 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:33 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:55:33 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:55:33 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:33 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:33 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:55:33 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:55:33 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:33 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:33 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:55:33 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:55:33 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:33 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:33 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:55:33 PM ::1 Returned 200 in 3 ms
+ HTTP  4/27/2026 9:55:34 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:55:34 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:34 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:55:34 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:34 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:55:34 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:34 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:55:34 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:34 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:55:34 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:34 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:55:34 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:35 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:55:35 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:35 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:55:35 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:35 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:55:35 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:36 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:55:36 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:56 PM ::1 GET /
+ HTTP  4/27/2026 9:55:56 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:56 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:55:56 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:55:56 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:56 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:55:56 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:55:56 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:56 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:56 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:55:56 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:56 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:55:56 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:56 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:56 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:55:56 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:56 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:55:56 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:57 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:55:57 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:57 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:55:57 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:57 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:55:57 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:57 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:55:57 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:55:57 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:55:57 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:57 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:55:57 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:55:58 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:55:58 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:58 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:55:58 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:55:58 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:55:58 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:19 PM ::1 GET /
+ HTTP  4/27/2026 9:56:19 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:19 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:56:19 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:56:19 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:56:19 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:19 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:19 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:19 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:56:19 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:56:19 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:56:19 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:56:19 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:56:19 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:56:19 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:56:19 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:19 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:56:19 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:19 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:56:19 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:20 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:56:20 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:20 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:56:20 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:20 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:56:20 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:20 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:56:20 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:20 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:56:20 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:20 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:56:20 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:21 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:56:21 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:21 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:56:21 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:42 PM ::1 GET /
+ HTTP  4/27/2026 9:56:42 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:42 PM ::1 GET /src/store/local-store.js
+ HTTP  4/27/2026 9:56:42 PM ::1 GET /data.js
+ HTTP  4/27/2026 9:56:42 PM ::1 GET /app.js
+ HTTP  4/27/2026 9:56:42 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:42 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:42 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:56:42 PM ::1 GET /tailwind-out.css
+ HTTP  4/27/2026 9:56:42 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:56:42 PM ::1 GET /styles.css
+ HTTP  4/27/2026 9:56:42 PM ::1 GET /sw-cleanup.js
+ HTTP  4/27/2026 9:56:42 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:56:42 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:56:42 PM ::1 GET /src/modules/catalog/ingredients.js
+ HTTP  4/27/2026 9:56:42 PM ::1 Returned 200 in 2 ms
+ HTTP  4/27/2026 9:56:42 PM ::1 GET /src/modules/recipes/recipes.js
+ HTTP  4/27/2026 9:56:42 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:42 PM ::1 GET /src/modules/log/day-log.js
+ HTTP  4/27/2026 9:56:42 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:56:42 PM ::1 GET /src/modules/log/gap-engine.js
+ HTTP  4/27/2026 9:56:42 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:56:43 PM ::1 GET /src/modules/carryover/carryover-engine.js
+ HTTP  4/27/2026 9:56:43 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:43 PM ::1 GET /src/modules/history/day-history.js
+ HTTP  4/27/2026 9:56:43 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:43 PM ::1 GET /src/modules/insights/insights-engine.js
+ HTTP  4/27/2026 9:56:43 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:43 PM ::1 GET /src/modules/observability/tracer.js
+ HTTP  4/27/2026 9:56:43 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:43 PM ::1 GET /src/store/supabase-config.js
+ HTTP  4/27/2026 9:56:43 PM ::1 Returned 200 in 1 ms
+ HTTP  4/27/2026 9:56:44 PM ::1 GET /src/modules/identity/auth.js
+ HTTP  4/27/2026 9:56:44 PM ::1 Returned 200 in 0 ms
+ HTTP  4/27/2026 9:56:44 PM ::1 GET /src/store/remote-store.js
+ HTTP  4/27/2026 9:56:44 PM ::1 Returned 200 in 1 ms
+
+ INFO  Gracefully shutting down. Please wait...

@@ -1,0 +1,11 @@
+chore(perf): rebaseline after Phase 3 supabase-js UMD landed
+
+The previous baseline pre-dated supabase-js (Phase 3), so the
+transferBytes gate was failing 35375 to 50400 by design. UX-felt
+metrics (TBT 0, click-to-paint medians 21-26ms) are healthy under
+Fast 3G; resetting transferBytes to the new equilibrium (50400 bytes)
+so future regressions are caught against the post-Phase-3 floor.
+
+10 runs per config.
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
