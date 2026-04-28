@@ -182,6 +182,60 @@ function useAuth() {
 }
 
 // ============================================================
+// CloudSync — Phase 4 read-only hydration (cloud → device)
+//
+// Runs once per mount when (cloudSync toggle on) AND (signed in) AND
+// (RemoteStore available). Defers the actual fetch to requestIdleCallback
+// so LCP is not blocked. Merge is append-only:
+//   - dayHistory dedup by date
+//   - dayLog dedup by id (cloud rows use idempotency_key, local rows use
+//     genId(); the two namespaces never collide).
+// No deletes or overwrites in this phase — Phase 5 introduces LWW.
+// ============================================================
+function CloudSync() {
+  const {
+    state,
+    setState
+  } = useNutrition();
+  const auth = useAuth();
+  const ranRef = useRef(false);
+  useEffect(() => {
+    if (ranRef.current) return;
+    if (!state.cloudSync) return;
+    if (!auth || auth.status !== "signed_in" || !auth.user) return;
+    if (!window.RemoteStore || !window.RemoteStore.isAvailable()) return;
+    ranRef.current = true;
+    const userId = auth.user.id;
+    const run = () => {
+      Promise.all([window.RemoteStore.fetchDays(userId), window.RemoteStore.fetchEntries(userId, state.currentDate)]).then(([days, entries]) => {
+        setState(s => {
+          const localDates = new Set((s.dayHistory || []).map(d => d.date));
+          const newHistoryRows = (days || []).filter(d => !localDates.has(d.date));
+          const mergedHistory = (s.dayHistory || []).concat(newHistoryRows).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+          const localIds = new Set((s.dayLog || []).map(e => e.id));
+          const newEntries = (entries || []).filter(e => !localIds.has(e.id));
+          const mergedLog = (s.dayLog || []).concat(newEntries);
+          return Object.assign({}, s, {
+            dayHistory: mergedHistory,
+            dayLog: mergedLog
+          });
+        });
+      }).catch(err => {
+        console.warn("Cloud hydration failed:", err && err.message);
+      });
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(run, {
+        timeout: 1500
+      });
+    } else {
+      setTimeout(run, 0);
+    }
+  }, [state.cloudSync, auth && auth.status, auth && auth.user, state.currentDate, setState]);
+  return null;
+}
+
+// ============================================================
 // Toast Context
 // ============================================================
 const ToastContext = createContext(null);
@@ -1851,7 +1905,7 @@ function App() {
       setActiveTab(tab);
     }
   }, [activeTab, showLogSheet]);
-  return /*#__PURE__*/React.createElement(NutritionProvider, null, /*#__PURE__*/React.createElement(AuthProvider, null, /*#__PURE__*/React.createElement(ToastProvider, null, /*#__PURE__*/React.createElement(AppHeader, null), activeTab === "home" && /*#__PURE__*/React.createElement(HomeScreen, {
+  return /*#__PURE__*/React.createElement(NutritionProvider, null, /*#__PURE__*/React.createElement(AuthProvider, null, /*#__PURE__*/React.createElement(ToastProvider, null, /*#__PURE__*/React.createElement(CloudSync, null), /*#__PURE__*/React.createElement(AppHeader, null), activeTab === "home" && /*#__PURE__*/React.createElement(HomeScreen, {
     onOpenLog: () => setShowLogSheet(true),
     onTabChange: handleTabChange
   }), activeTab === "dashboard" && /*#__PURE__*/React.createElement(DashboardScreen, null), activeTab === "insights" && /*#__PURE__*/React.createElement(InsightsScreen, null), activeTab === "settings" && /*#__PURE__*/React.createElement(SettingsScreen, null), showLogSheet && /*#__PURE__*/React.createElement(LogDaySheet, {

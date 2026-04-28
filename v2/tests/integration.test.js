@@ -590,9 +590,216 @@ test.describe('cloud sync settings', () => {
       .locator('meta[http-equiv="Content-Security-Policy"]')
       .getAttribute('content');
     expect(csp).not.toContain("'unsafe-eval'");
-    // script-src must not regain 'unsafe-inline' (style-src is allowed to keep it for fonts).
     const scriptSrc = (csp.match(/script-src[^;]*/) || [''])[0];
     expect(scriptSrc).not.toContain("'unsafe-inline'");
     expect(csp).toContain('https://*.supabase.co');
+  });
+});
+
+// ── Phase 4: Cloud Sync read-only hydration ──────────────────────────────────
+//
+// Hermetic mocks (option a from the Phase 4 plan):
+//   - Override window.Modules.Identity at init time with a stub that exposes
+//     a fake supabase client. Identity.js's later assignment is no-op'd by a
+//     property setter so the stub survives.
+//   - cloudSync toggle is preset in localStorage; no UI interaction needed.
+//   - No real network is contacted; page.route blocks any *.supabase.co hit
+//     in the OFF test for belt-and-suspenders.
+test.describe('cloud sync hydration (phase 4)', () => {
+  function seedAppState(overrides) {
+    const base = {
+      currentDate: new Date().toISOString().slice(0, 10),
+      dayLog: [],
+      dayHistory: [],
+      cloudSync: false,
+      themeMode: 'dark',
+      aiModel: 'claude-sonnet-4-6',
+      fatSolubleCarryover: { b12: 0, vit_e: 0, vit_d: 0 },
+      carryoverDaysRemaining: { b12: 0, vit_e: 0 },
+    };
+    return Object.assign(base, overrides || {});
+  }
+
+  async function preseedState(page, state) {
+    await page.addInitScript((s) => {
+      localStorage.setItem('nutrition_calc_v2', JSON.stringify(s));
+    }, state);
+  }
+
+  async function installIdentityStub(page, { signedIn = true, days = [], entries = [] } = {}) {
+    await page.addInitScript(({ signedIn, days, entries }) => {
+      const fakeUser = { id: 'test-user-uuid' };
+      const fakeSession = signedIn ? { user: fakeUser, access_token: 'fake' } : null;
+
+      function buildQuery(rows) {
+        const q = {};
+        ['select', 'eq', 'is', 'gte', 'order'].forEach((m) => { q[m] = function () { return q; }; });
+        q.then = function (resolve, reject) {
+          return Promise.resolve({ data: rows, error: null }).then(resolve, reject);
+        };
+        return q;
+      }
+
+      const fakeClient = {
+        from: function (table) {
+          if (table === 'days') return buildQuery(days);
+          if (table === 'day_entries') return buildQuery(entries);
+          return buildQuery([]);
+        },
+        auth: {
+          getSession: function () { return Promise.resolve({ data: { session: fakeSession } }); },
+          onAuthStateChange: function (cb) {
+            setTimeout(function () { cb('SIGNED_IN', fakeSession); }, 0);
+            return { data: { subscription: { unsubscribe: function () {} } } };
+          },
+          signInWithPassword: function () { return Promise.resolve({ data: { session: fakeSession, user: fakeUser }, error: null }); },
+          signOut: function () { return Promise.resolve({ error: null }); },
+        },
+      };
+
+      const stub = {
+        isConfigured: function () { return true; },
+        getClient: function () { return fakeClient; },
+        getSession: function () { return Promise.resolve(fakeSession); },
+        signIn: function () { return Promise.resolve({ session: fakeSession, user: fakeUser }); },
+        signOut: function () { return Promise.resolve(); },
+        onAuthStateChange: function (cb) { setTimeout(function () { cb(fakeSession); }, 0); return function () {}; },
+      };
+
+      window.Modules = window.Modules || {};
+      Object.defineProperty(window.Modules, 'Identity', {
+        get: function () { return stub; },
+        set: function () {},
+        configurable: true,
+      });
+    }, { signedIn: signedIn, days: days, entries: entries });
+  }
+
+  test('cloudSync OFF: no requests to *.supabase.co within 3s of load', async ({ page }) => {
+    const supabaseHits = [];
+    await page.route('**/*.supabase.co/**', async (route) => {
+      supabaseHits.push(route.request().url());
+      await route.abort();
+    });
+    await page.goto('/');
+    await page.waitForSelector('input[placeholder="Describe what you ate..."]', { timeout: 8000 });
+    await page.waitForTimeout(3000);
+    expect(supabaseHits).toEqual([]);
+  });
+
+  test('cloudSync ON + signed in: dayHistory hydrated with cloud-only rows', async ({ page }) => {
+    await preseedState(page, seedAppState({ cloudSync: true }));
+    await installIdentityStub(page, {
+      signedIn: true,
+      days: [
+        {
+          day_date: '2026-04-20',
+          totals: { protein: 50 },
+          gaps_closed: 5,
+          energy: 3,
+          digestion: 3,
+          notes: 'cloud-only',
+          updated_at: '2026-04-20T12:00:00Z',
+        },
+      ],
+      entries: [],
+    });
+
+    await page.goto('/');
+    await page.waitForFunction(() => {
+      const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+      return (s.dayHistory || []).some((d) => d.date === '2026-04-20');
+    }, null, { timeout: 5000 });
+
+    const state = await page.evaluate(() => JSON.parse(localStorage.getItem('nutrition_calc_v2')));
+    const cloudRow = state.dayHistory.find((d) => d.date === '2026-04-20');
+    expect(cloudRow).toBeDefined();
+    expect(cloudRow.notes).toBe('cloud-only');
+    expect(cloudRow.gapsClosed).toBe(5);
+  });
+
+  test('cloud merge is append-only: existing local row by date is preserved', async ({ page }) => {
+    const localRow = {
+      date: '2026-04-20',
+      totals: { protein: 999 },
+      gapsClosed: 99,
+      energy: 5,
+      digestion: 5,
+      notes: 'local-wins',
+    };
+    await preseedState(page, seedAppState({ cloudSync: true, dayHistory: [localRow] }));
+    await installIdentityStub(page, {
+      signedIn: true,
+      days: [
+        {
+          day_date: '2026-04-20',
+          totals: { protein: 1 },
+          gaps_closed: 1,
+          energy: 1,
+          digestion: 1,
+          notes: 'cloud-should-be-ignored',
+          updated_at: '2026-04-21T00:00:00Z',
+        },
+        {
+          day_date: '2026-04-19',
+          totals: {},
+          gaps_closed: 0,
+          energy: null,
+          digestion: null,
+          notes: '',
+          updated_at: '2026-04-19T00:00:00Z',
+        },
+      ],
+      entries: [],
+    });
+
+    await page.goto('/');
+    await page.waitForFunction(() => {
+      const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+      return (s.dayHistory || []).some((d) => d.date === '2026-04-19');
+    }, null, { timeout: 5000 });
+
+    const state = await page.evaluate(() => JSON.parse(localStorage.getItem('nutrition_calc_v2')));
+    const kept = state.dayHistory.find((d) => d.date === '2026-04-20');
+    expect(kept.notes).toBe('local-wins');
+    expect(kept.gapsClosed).toBe(99);
+    expect(state.dayHistory.find((d) => d.date === '2026-04-19')).toBeDefined();
+  });
+
+  test('CLS during hydration stays under 0.01', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__cls = 0;
+      try {
+        new PerformanceObserver((list) => {
+          for (const e of list.getEntries()) {
+            if (!e.hadRecentInput) window.__cls += e.value;
+          }
+        }).observe({ type: 'layout-shift', buffered: true });
+      } catch (_) {}
+    });
+    await preseedState(page, seedAppState({ cloudSync: true }));
+    await installIdentityStub(page, {
+      signedIn: true,
+      days: Array.from({ length: 10 }, (_, i) => ({
+        day_date: '2026-04-' + String(10 + i).padStart(2, '0'),
+        totals: {},
+        gaps_closed: 3,
+        energy: 3,
+        digestion: 3,
+        notes: '',
+        updated_at: '2026-04-10T00:00:00Z',
+      })),
+      entries: [],
+    });
+
+    await page.goto('/');
+    await page.waitForFunction(() => {
+      const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+      return (s.dayHistory || []).length >= 10;
+    }, null, { timeout: 5000 });
+    await page.waitForTimeout(300);
+
+    const cls = await page.evaluate(() => window.__cls || 0);
+    expect(cls).toBeLessThan(0.01);
   });
 });
