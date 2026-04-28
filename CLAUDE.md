@@ -46,6 +46,30 @@ Babel compiles the same source file. Never run only one and ship the other stale
   Each module is independently testable in Node when it has no DOM/React deps.
   JSX (Contexts, components) stays inline in `src/app.jsx` because the build
   compiles only that one entry point.
+- **`window.Modules.Identity` is the only entry point for auth + the Supabase
+  client.** No file outside the Identity module may call `supabase.createClient`
+  or read `localStorage` for session tokens. Components that need the client
+  call `Modules.Identity.getClient()`; auth UI subscribes via
+  `Modules.Identity.onAuthStateChange(cb)`. This single seam is what makes the
+  hermetic test stub below possible.
+- **`window.RemoteStore` is the only entry point for Supabase reads.** Defined
+  in `v2/src/store/remote-store.js`; calls `Modules.Identity.getClient()` and
+  exposes `fetchDays` / `fetchEntries` (Phase 4 read-only) plus `mapDayRow` /
+  `mapEntryRow` so callers stay declarative. Phase 5 will add write methods to
+  the same module — never bypass it with ad-hoc `.from(...)` calls in `app.jsx`.
+- **Hermetic Supabase test stub (Phase 4 pattern).** Integration tests must
+  not hit real Supabase. Stub `Modules.Identity` in `page.addInitScript` BEFORE
+  the real `auth.js` runs by installing a non-overwritable property:
+  ```js
+  window.Modules = window.Modules || {};
+  Object.defineProperty(window.Modules, 'Identity', {
+    get: () => stub, set: () => {}, configurable: true,
+  });
+  ```
+  The setter no-ops the real assignment in `auth.js`, so the stub survives.
+  See `v2/tests/integration.test.js` → `cloud sync hydration (phase 4)` for
+  the full fake-client shape (`auth.getSession`, `auth.onAuthStateChange`,
+  `from(table).select(...).eq(...).order(...)` thenable chain).
 - **CSS custom properties** (`--color-surface`, `--color-on-surface`, `--color-ring-bg`,
   etc.) are defined in `v2/input.css` inside `@layer base`. They are NOT in `styles.css`.
   Edit them there; `styles.css` only has component-level overrides.
