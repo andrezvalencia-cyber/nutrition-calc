@@ -36,10 +36,9 @@ const PRECACHE_URLS = [
   "/src/modules/insights/insights-engine.js",
   "/src/modules/observability/tracer.js",
   "/src/modules/identity/auth.js",
-  "https://unpkg.com/idb-keyval@6.2.1/dist/umd.js",
-  "https://unpkg.com/@supabase/supabase-js@2.105.0/dist/umd/supabase.js",
-  "https://unpkg.com/react@18.3.1/umd/react.production.min.js",
-  "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js",
+  // External CDN bundles are NOT eagerly pre-cached here.
+  // They are served cache-first by the unpkg fetch rule on first access,
+  // which avoids fetching ~3 MB during SW install on every new build hash.
 ];
 
 const KEEP_CACHES = new Set([SHELL_CACHE, RUNTIME_CACHE]);
