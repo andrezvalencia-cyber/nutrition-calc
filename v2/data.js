@@ -395,6 +395,12 @@ const INGREDIENTS = {
     epa_dha:0, calcium:0, iron:0, zinc:0, vit_d:0,
     vit_e:268, b12:0, folate:0, vit_c:0, potassium:0, magnesium:0
   },
+  supp_cal_mag_citrate: {
+    name:"Solgar Cal Mag Citrate", defaultQty:3, unit:"tab", category:"supplement",
+    protein:0, carbs:0, fat:0, fiber:0, sat_fat:0,
+    epa_dha:0, calcium:1000, iron:0, zinc:0, vit_d:0,
+    vit_e:0, b12:0, folate:0, vit_c:0, potassium:0, magnesium:500
+  },
 };
 
 // ============================================================

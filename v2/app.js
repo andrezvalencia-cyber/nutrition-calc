@@ -928,16 +928,16 @@ function LogDayModal({
     className: "space-y-2"
   }, /*#__PURE__*/React.createElement("label", {
     className: "text-sm font-semibold font-label text-on-surface-variant"
-  }, "Digestion"), /*#__PURE__*/React.createElement("div", {
+  }, "Digestive Comfort"), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-5 gap-2"
-  }, ["LOW", "2", "3", "4", "HIGH"].map((label, i) => /*#__PURE__*/React.createElement("button", {
-    key: i,
-    onClick: () => setDigestion(i + 1),
-    className: `py-3 rounded-3xl text-center font-semibold text-xs transition-all ${digestion === i + 1 ? "bg-primary text-white scale-110 shadow-lg shadow-primary/30" : "bg-surface-container-high text-on-surface-variant hover:bg-surface-variant"}`
-  }, label)))), /*#__PURE__*/React.createElement("textarea", {
+  }, [1, 2, 3, 4, 5].map(v => /*#__PURE__*/React.createElement("button", {
+    key: v,
+    onClick: () => setDigestion(v),
+    className: `py-3 rounded-3xl text-center font-semibold text-sm transition-all ${digestion === v ? "bg-primary text-white scale-110 shadow-lg shadow-primary/30" : "bg-surface-container-high text-on-surface-variant hover:bg-surface-variant"}`
+  }, v)))), /*#__PURE__*/React.createElement("textarea", {
     value: notes,
     onChange: e => setNotes(e.target.value),
-    placeholder: "Notes (optional)...",
+    placeholder: "Any specific meals to note?",
     rows: 3,
     className: "w-full bg-on-surface/5 rounded-2xl px-4 py-3 text-sm placeholder:text-on-surface-variant/40 resize-none font-body"
   }), /*#__PURE__*/React.createElement("button", {

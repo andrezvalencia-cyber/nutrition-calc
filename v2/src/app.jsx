@@ -790,18 +790,18 @@
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold font-label text-on-surface-variant">Digestion</label>
+              <label className="text-sm font-semibold font-label text-on-surface-variant">Digestive Comfort</label>
               <div className="grid grid-cols-5 gap-2">
-                {["LOW", "2", "3", "4", "HIGH"].map((label, i) => (
+                {[1, 2, 3, 4, 5].map((v) => (
                   <button
-                    key={i}
-                    onClick={() => setDigestion(i + 1)}
-                    className={`py-3 rounded-3xl text-center font-semibold text-xs transition-all ${
-                      digestion === i + 1
+                    key={v}
+                    onClick={() => setDigestion(v)}
+                    className={`py-3 rounded-3xl text-center font-semibold text-sm transition-all ${
+                      digestion === v
                         ? "bg-primary text-white scale-110 shadow-lg shadow-primary/30"
                         : "bg-surface-container-high text-on-surface-variant hover:bg-surface-variant"
                     }`}
-                  >{label}</button>
+                  >{v}</button>
                 ))}
               </div>
             </div>
@@ -809,7 +809,7 @@
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Notes (optional)..."
+              placeholder="Any specific meals to note?"
               rows={3}
               className="w-full bg-on-surface/5 rounded-2xl px-4 py-3 text-sm placeholder:text-on-surface-variant/40 resize-none font-body"
             />
