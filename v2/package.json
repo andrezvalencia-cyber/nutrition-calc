@@ -6,6 +6,8 @@
   "scripts": {
     "build": "babel src/app.jsx -o app.js",
     "build:css": "tailwindcss -i input.css -o tailwind-out.css --minify",
+    "build:stamp": "node scripts/stamp-build-hash.mjs",
+    "build:all": "npm run build:css && npm run build && npm run build:stamp",
     "test": "playwright test",
     "test:headless": "playwright test --reporter=list",
     "perf": "node tests/perf-benchmark.js",
