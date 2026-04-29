@@ -15,7 +15,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # INACTIVE — perf-gate is disabled and slated for removal.
+  # The benchmark (tests/perf-benchmark.js) and baseline (tests/perf-baseline.json)
+  # remain in the repo for reference; delete them along with perf-baseline.yml when
+  # the performance testing strategy is replaced.
   perf-gate:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -61,7 +66,6 @@ jobs:
         run: node tests/perf-benchmark.js --compare
 
   deploy:
-    needs: perf-gate
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

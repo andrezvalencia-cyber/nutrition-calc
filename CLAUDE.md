@@ -308,6 +308,10 @@ Before completing a task that requires deployment via `.github/workflows/deploy.
 4. **Live Check:** Once the GitHub Action is green, use `curl -I <production-url>` to verify a `200 OK` response or use the browser tool to verify the UI visually.
 5. **Rollback Plan:** If the deployment fails, immediately propose a `git revert` to the last known stable state.
 
+> **Perf gate (inactive):** The `perf-gate` job in `deploy.yml` is disabled (`if: false`) and
+> slated for removal together with `tests/perf-benchmark.js`, `tests/perf-baseline.json`, and
+> `.github/workflows/perf-baseline.yml`. Deploys run straight to the `deploy` job.
+
 ---
 
 ## 10. Service Worker (Phase 7)
