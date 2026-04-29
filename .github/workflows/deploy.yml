@@ -87,6 +87,10 @@ jobs:
         working-directory: v2
         run: npm run build
 
+      - name: Stamp build hash into sw.js + index.html
+        working-directory: v2
+        run: npm run build:stamp
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

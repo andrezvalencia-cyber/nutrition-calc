@@ -14,8 +14,13 @@ cd v2 && npm run build:css && npm run build
 cd v2 && npm run build:css   # Tailwind: scans src/app.jsx → tailwind-out.css
 cd v2 && npm run build       # Babel: src/app.jsx → app.js
 
+# CI also runs build:stamp (writes the build hash into sw.js + index.html).
+# Do NOT run build:stamp locally for normal dev — see §10.
+# cd v2 && npm run build:stamp
+
 # Run Node unit tests (no server needed)
 node /Users/andyv/Projects/nutrition-calculator/v2/tests/write-behind.test.js
+node /Users/andyv/Projects/nutrition-calculator/v2/tests/sync-leader.test.js
 
 # Run integration tests (server on :8765 must be running first)
 cd v2 && npm test              # full Playwright reporter
@@ -81,6 +86,22 @@ Babel compiles the same source file. Never run only one and ship the other stale
   - On retry exhaustion: rollback thunk is called (undo optimistic update), then
     `wbq:failed` CustomEvent fires → `ToastProvider` shows "Could not save — tap
     to retry".
+- **`window.SyncLeader` is the only entry point for cross-tab hydration
+  coordination (Phase 6).** Defined in `v2/src/store/sync-leader.js`. Uses
+  `BroadcastChannel("sync-leader")` to elect one leader tab per origin; the
+  leader is the only tab that calls `RemoteStore.fetchDays` /
+  `fetchEntries` on boot. Followers subscribe via `SyncLeader.onPayload(cb)`
+  and apply the same append-only merge — zero extra network reads. The
+  `CloudSync` effect in `app.jsx` is the only caller; do not invoke
+  `RemoteStore.fetch*` from components directly.
+- **Phase 6 carryover invariant:** payloads carry only the raw
+  `{ days, entries, userId, ts }` rows fetched from Supabase.
+  `fatSolubleCarryover` and `carryoverDaysRemaining` are tab-local — every
+  tab keeps using `Modules.Carryover.computeCarryover()` at Log Day time
+  ([app.jsx:710](v2/src/app.jsx)). `SyncLeader.broadcastPayload()`
+  defensively strips any `carryover` field before publishing, so it cannot
+  leak across the wire by mistake. Followers compare `payload.userId` to
+  their own session and discard mismatches (cross-account sign-in race).
 - **Hermetic Supabase test stub (Phase 4 pattern).** Integration tests must
   not hit real Supabase. Stub `Modules.Identity` in `page.addInitScript` BEFORE
   the real `auth.js` runs by installing a non-overwritable property:
@@ -286,3 +307,66 @@ Before completing a task that requires deployment via `.github/workflows/deploy.
    *Do not* use `gh run watch` as it produces excessive output that burns tokens.
 4. **Live Check:** Once the GitHub Action is green, use `curl -I <production-url>` to verify a `200 OK` response or use the browser tool to verify the UI visually.
 5. **Rollback Plan:** If the deployment fails, immediately propose a `git revert` to the last known stable state.
+
+---
+
+## 10. Service Worker (Phase 7)
+
+`v2/sw.js` is the only Service Worker. It implements a cache-first app
+shell with versioned cache names keyed off the build hash, plus
+network-first fallbacks for the data plane (Supabase, Anthropic).
+
+### Cache strategies
+
+| Request | Strategy | Cache |
+|---|---|---|
+| Same-origin navigation (HTML) | Stale-while-revalidate | `vitality-v2-shell-<hash>` |
+| Same-origin precached asset | Cache-first | `vitality-v2-shell-<hash>` |
+| `*.supabase.co` | Network-first (3 s timeout) + cache fallback | `vitality-v2-runtime-<hash>` |
+| `api.anthropic.com` | Network-first + cache fallback (POSTs are uncacheable per Cache API; effectively network-only at runtime) | `vitality-v2-runtime-<hash>` |
+| `fonts.googleapis.com`, `fonts.gstatic.com` | Cache-first | `vitality-v2-runtime-<hash>` |
+| `unpkg.com` | Cache-first (URLs are SRI-pinned + immutable) | `vitality-v2-shell-<hash>` |
+| Anything else | Network-only (passthrough) | — |
+
+### Build hash injection
+
+- `__BUILD_HASH__` is the placeholder in `v2/sw.js` and `v2/index.html`.
+- CI (`.github/workflows/deploy.yml`) runs `npm run build:stamp` after
+  `build:css` + `build`, which executes `v2/scripts/stamp-build-hash.mjs`
+  and replaces every `__BUILD_HASH__` with `${GITHUB_SHA::8}`.
+- **Do not run `build:stamp` locally** for normal dev. The committed
+  source must keep the literal `__BUILD_HASH__` placeholder so cache
+  names stay stable across local reloads. The script logs a warning if
+  it modifies files outside CI.
+
+### Pre-cache invariant
+
+The `PRECACHE_URLS` array in `v2/sw.js` mirrors the `<script>` and
+`<link rel="stylesheet">` tags in `v2/index.html`. Every time you add a
+new same-origin runtime asset to `index.html`, add the corresponding
+URL to `PRECACHE_URLS`. Forgetting this means the asset will not be
+available offline and the SW will pass through to the network.
+
+### Lifecycle
+
+- `install` populates `SHELL_CACHE` and calls `self.skipWaiting()`.
+- `activate` deletes every cache whose name is not the current
+  `SHELL_CACHE` or `RUNTIME_CACHE` (this also evicts the legacy
+  `nutri-calc-v1` cache that the old `sw-cleanup.js` used to clear),
+  then calls `self.clients.claim()` so the new SW controls open pages
+  immediately.
+- The page listens for `controllerchange` and reloads once when a new
+  SW takes control — this is the stuck-shell guard.
+
+### Registration
+
+`v2/src/app.jsx` registers `sw.js` once per page load on the `load`
+event. The Modules namespace is unaware of the SW; it operates entirely
+at the network layer.
+
+### CSP
+
+Workers require `worker-src 'self'`. Do not regress this to `'none'` —
+the SW will silently fail to register. CSP `connect-src` already covers
+Supabase + Anthropic, and `script-src 'self' https://unpkg.com` covers
+the SW script itself (same-origin) and the precached unpkg URLs.

@@ -182,16 +182,38 @@ function useAuth() {
 }
 
 // ============================================================
-// CloudSync — Phase 4 read-only hydration (cloud → device)
+// CloudSync — Phase 4 hydration + Phase 6 multi-tab leader election
 //
 // Runs once per mount when (cloudSync toggle on) AND (signed in) AND
-// (RemoteStore available). Defers the actual fetch to requestIdleCallback
-// so LCP is not blocked. Merge is append-only:
+// (RemoteStore available). Defers actual work to requestIdleCallback
+// so LCP is not blocked.
+//
+// Phase 6: only the elected leader tab fetches from RemoteStore.
+// Followers wait for the leader's payload via SyncLeader.onPayload()
+// and apply the same append-only merge — zero extra network reads.
+// Carryover values never cross the wire; each tab keeps using
+// Modules.Carryover.computeCarryover() locally at Log Day time.
+//
+// Merge is append-only:
 //   - dayHistory dedup by date
 //   - dayLog dedup by id (cloud rows use idempotency_key, local rows use
 //     genId(); the two namespaces never collide).
 // No deletes or overwrites in this phase — Phase 5 introduces LWW.
 // ============================================================
+function applyHydration(setState, days, entries) {
+  setState(s => {
+    const localDates = new Set((s.dayHistory || []).map(d => d.date));
+    const newHistoryRows = (days || []).filter(d => !localDates.has(d.date));
+    const mergedHistory = (s.dayHistory || []).concat(newHistoryRows).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    const localIds = new Set((s.dayLog || []).map(e => e.id));
+    const newEntries = (entries || []).filter(e => !localIds.has(e.id));
+    const mergedLog = (s.dayLog || []).concat(newEntries);
+    return Object.assign({}, s, {
+      dayHistory: mergedHistory,
+      dayLog: mergedLog
+    });
+  });
+}
 function CloudSync() {
   const {
     state,
@@ -206,22 +228,36 @@ function CloudSync() {
     if (!window.RemoteStore || !window.RemoteStore.isAvailable()) return;
     ranRef.current = true;
     const userId = auth.user.id;
+    const SL = window.SyncLeader;
     const run = () => {
-      Promise.all([window.RemoteStore.fetchDays(userId), window.RemoteStore.fetchEntries(userId, state.currentDate)]).then(([days, entries]) => {
-        setState(s => {
-          const localDates = new Set((s.dayHistory || []).map(d => d.date));
-          const newHistoryRows = (days || []).filter(d => !localDates.has(d.date));
-          const mergedHistory = (s.dayHistory || []).concat(newHistoryRows).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
-          const localIds = new Set((s.dayLog || []).map(e => e.id));
-          const newEntries = (entries || []).filter(e => !localIds.has(e.id));
-          const mergedLog = (s.dayLog || []).concat(newEntries);
-          return Object.assign({}, s, {
-            dayHistory: mergedHistory,
-            dayLog: mergedLog
+      // No SyncLeader (very old browsers): fall back to per-tab fetch.
+      if (!SL || typeof SL.whenReady !== "function") {
+        Promise.all([window.RemoteStore.fetchDays(userId), window.RemoteStore.fetchEntries(userId, state.currentDate)]).then(([days, entries]) => applyHydration(setState, days, entries)).catch(err => console.warn("Cloud hydration failed:", err && err.message));
+        return;
+      }
+      SL.whenReady().then(({
+        role
+      }) => {
+        if (role === "leader") {
+          Promise.all([window.RemoteStore.fetchDays(userId), window.RemoteStore.fetchEntries(userId, state.currentDate)]).then(([days, entries]) => {
+            applyHydration(setState, days, entries);
+            SL.broadcastPayload({
+              days: days,
+              entries: entries,
+              userId: userId,
+              ts: Date.now()
+            });
+          }).catch(err => {
+            console.warn("Cloud hydration failed:", err && err.message);
           });
-        });
-      }).catch(err => {
-        console.warn("Cloud hydration failed:", err && err.message);
+        } else {
+          // Follower: wait for the leader's payload. Discard payloads
+          // for a different account (rare race during sign-in churn).
+          SL.onPayload(payload => {
+            if (!payload || payload.userId !== userId) return;
+            applyHydration(setState, payload.days || [], payload.entries || []);
+          });
+        }
       });
     };
     if (typeof window.requestIdleCallback === "function") {
@@ -2012,6 +2048,31 @@ function App() {
     activeTab: activeTab,
     onTabChange: handleTabChange
   }))));
+}
+
+// ============================================================
+// Service Worker registration (Phase 7).
+// Registers /sw.js after first paint. The controllerchange listener
+// is the stuck-shell guard: when a new SW activates via skipWaiting +
+// clients.claim, the page's controller flips and we reload once to
+// pick up the fresh shell.
+// ============================================================
+if ("serviceWorker" in navigator) {
+  // Only reload on controllerchange when there was already a controller
+  // at registration time. On first install, controller flips null →
+  // active and the page is already running fresh — reloading then would
+  // disrupt every initial page load (and break Playwright tests).
+  const __hadController = navigator.serviceWorker.controller !== null;
+  let __swReloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!__hadController) return;
+    if (__swReloading) return;
+    __swReloading = true;
+    window.location.reload();
+  });
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
 }
 
 // ============================================================

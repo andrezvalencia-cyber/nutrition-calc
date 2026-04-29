@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.anthropic.com https://*.supabase.co; img-src 'self' data:; worker-src 'none'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.anthropic.com https://*.supabase.co; img-src 'self' data:; worker-src 'self'" />
+  <meta name="sw-version" content="__BUILD_HASH__" />
   <title>Vitality — Nutrition Calculator</title>
 
   <!-- Preconnects: font origins + AI endpoint (early TLS handshake) -->
@@ -89,9 +90,6 @@
   <div class="bg-glow-orb-2"></div>
   <div id="root"></div>
 
-  <!-- Evict legacy V1 Service Worker and clear its caches -->
-  <script src="sw-cleanup.js"></script>
-
   <!-- Local persistence layer (window.LocalStore) -->
   <script src="src/store/local-store.js"></script>
 
@@ -139,6 +137,9 @@
 
   <!-- Write-behind queue (window.WriteBehind) — Phase 5 -->
   <script src="src/store/write-behind.js"></script>
+
+  <!-- Multi-tab leader election (window.SyncLeader) — Phase 6 -->
+  <script src="src/store/sync-leader.js"></script>
 
   <!-- React 18 UMD -->
   <script crossorigin="anonymous" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>

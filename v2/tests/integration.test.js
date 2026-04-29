@@ -983,3 +983,216 @@ test.describe('write-behind queue (phase 5)', () => {
     expect(text).toContain('Could not save');
   });
 });
+
+// ── Phase 6: Multi-tab leader election ───────────────────────────────────────
+//
+// Two tabs in the same BrowserContext share a BroadcastChannel("sync-leader").
+// Verifies:
+//   A. Only the leader hits RemoteStore — follower's fetch counter stays 0.
+//   B. Leader handoff: closing the leader tab promotes the follower.
+//
+// Strategy: install the Identity stub via context.addInitScript so both
+// pages pick it up, and have the stub increment window.__remoteCallCount
+// every time the fake supabase `from(table).select(...)` chain is awaited.
+test.describe('multi-tab leader election (phase 6)', () => {
+  function seedState() {
+    return {
+      currentDate: new Date().toISOString().slice(0, 10),
+      dayLog: [], dayHistory: [], cloudSync: true,
+      themeMode: 'dark', aiModel: 'claude-sonnet-4-6',
+      fatSolubleCarryover: { b12: 0, vit_e: 0, vit_d: 0 },
+      carryoverDaysRemaining: { b12: 0, vit_e: 0 },
+    };
+  }
+
+  async function installSharedStub(context, days, entries) {
+    await context.addInitScript(({ days, entries, state }) => {
+      localStorage.setItem('nutrition_calc_v2', JSON.stringify(state));
+      window.__remoteCallCount = 0;
+      const fakeUser = { id: 'shared-user-uuid' };
+      const fakeSession = { user: fakeUser, access_token: 'fake' };
+
+      function buildQuery(rows) {
+        const q = {};
+        ['select', 'eq', 'is', 'gte', 'order'].forEach((m) => { q[m] = function () { return q; }; });
+        q.then = function (resolve, reject) {
+          window.__remoteCallCount = (window.__remoteCallCount || 0) + 1;
+          return Promise.resolve({ data: rows, error: null }).then(resolve, reject);
+        };
+        return q;
+      }
+
+      const fakeClient = {
+        from: function (table) {
+          if (table === 'days') return buildQuery(days);
+          if (table === 'day_entries') return buildQuery(entries);
+          return buildQuery([]);
+        },
+        auth: {
+          getSession: function () { return Promise.resolve({ data: { session: fakeSession } }); },
+          onAuthStateChange: function (cb) {
+            setTimeout(function () { cb('SIGNED_IN', fakeSession); }, 0);
+            return { data: { subscription: { unsubscribe: function () {} } } };
+          },
+          signInWithPassword: function () {
+            return Promise.resolve({ data: { session: fakeSession, user: fakeUser }, error: null });
+          },
+          signOut: function () { return Promise.resolve({ error: null }); },
+        },
+      };
+
+      const stub = {
+        isConfigured: function () { return true; },
+        getClient:    function () { return fakeClient; },
+        getSession:   function () { return Promise.resolve(fakeSession); },
+        signIn:       function () { return Promise.resolve({ session: fakeSession, user: fakeUser }); },
+        signOut:      function () { return Promise.resolve(); },
+        onAuthStateChange: function (cb) {
+          setTimeout(function () { cb(fakeSession); }, 0);
+          return function () {};
+        },
+      };
+
+      window.Modules = window.Modules || {};
+      Object.defineProperty(window.Modules, 'Identity', {
+        get: function () { return stub; },
+        set: function () {},
+        configurable: true,
+      });
+    }, { days, entries, state: seedState() });
+  }
+
+  test('only the leader fetches; follower hydrates via BroadcastChannel', async ({ context }) => {
+    await installSharedStub(context,
+      [{
+        day_date: '2026-04-15', totals: { protein: 42 }, gaps_closed: 7,
+        energy: 4, digestion: 4, notes: 'shared-leader-row',
+        updated_at: '2026-04-15T12:00:00Z',
+      }],
+      []
+    );
+
+    // Tab A boots first → becomes leader.
+    const tabA = await context.newPage();
+    await tabA.goto('/');
+    await tabA.waitForFunction(() => {
+      const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+      return (s.dayHistory || []).some((d) => d.date === '2026-04-15');
+    }, null, { timeout: 5000 });
+    await tabA.waitForFunction(() => window.SyncLeader && window.SyncLeader.getRole() === 'leader',
+      null, { timeout: 3000 });
+
+    const callsA1 = await tabA.evaluate(() => window.__remoteCallCount);
+    expect(callsA1).toBeGreaterThanOrEqual(2); // fetchDays + fetchEntries
+
+    // Tab B boots second → becomes follower; gets hydrated via channel.
+    const tabB = await context.newPage();
+    await tabB.goto('/');
+    await tabB.waitForFunction(() => {
+      const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+      return (s.dayHistory || []).some((d) => d.date === '2026-04-15');
+    }, null, { timeout: 5000 });
+
+    const roleB = await tabB.evaluate(() => window.SyncLeader && window.SyncLeader.getRole());
+    expect(roleB).toBe('follower');
+
+    // Critical assertion: follower made zero RemoteStore calls.
+    const callsB = await tabB.evaluate(() => window.__remoteCallCount || 0);
+    expect(callsB).toBe(0);
+
+    // Leader's count should not have grown.
+    const callsA2 = await tabA.evaluate(() => window.__remoteCallCount);
+    expect(callsA2).toBe(callsA1);
+
+    await tabA.close();
+    await tabB.close();
+  });
+
+  test('leader handoff on tab close promotes the follower', async ({ context }) => {
+    await installSharedStub(context, [], []);
+
+    const tabA = await context.newPage();
+    await tabA.goto('/');
+    await tabA.waitForFunction(() => window.SyncLeader && window.SyncLeader.getRole() === 'leader',
+      null, { timeout: 6000 });
+
+    const tabB = await context.newPage();
+    await tabB.goto('/');
+    await tabB.waitForFunction(() => window.SyncLeader && window.SyncLeader.getRole() === 'follower',
+      null, { timeout: 6000 });
+
+    // Close the leader; pagehide listener should broadcast leader-leaving.
+    await tabA.close();
+
+    // B re-elects to leader (jitter ≤50ms + ELECTION_WAIT_MS = 150ms + slack).
+    await tabB.waitForFunction(() => window.SyncLeader && window.SyncLeader.getRole() === 'leader',
+      null, { timeout: 6000 });
+    const finalRole = await tabB.evaluate(() => window.SyncLeader.getRole());
+    expect(finalRole).toBe('leader');
+
+    await tabB.close();
+  });
+});
+
+// ── Phase 7: Service Worker offline shell ────────────────────────────────────
+
+test.describe('phase 7: service worker', () => {
+  test('boots from cache when offline', async ({ context, page }) => {
+    await page.goto('/');
+
+    // Wait for SW to activate + claim control of the page.
+    await page.waitForFunction(
+      () => navigator.serviceWorker && navigator.serviceWorker.controller !== null,
+      null,
+      { timeout: 10000 }
+    );
+
+    // Wait for the shell cache to be populated.
+    await page.waitForFunction(async () => {
+      const keys = await caches.keys();
+      return keys.some((k) => k.startsWith('vitality-v2-shell-'));
+    }, null, { timeout: 10000 });
+
+    // Confirm app mounted online before going offline.
+    await page.waitForFunction(
+      () => document.getElementById('root') && document.getElementById('root').children.length > 0,
+      null,
+      { timeout: 10000 }
+    );
+
+    // Cut the network and reload — boot must come from cache.
+    await context.setOffline(true);
+    await page.reload();
+
+    await page.waitForFunction(
+      () => document.getElementById('root') && document.getElementById('root').children.length > 0,
+      null,
+      { timeout: 10000 }
+    );
+
+    const mounted = await page.evaluate(() => document.getElementById('root').children.length);
+    expect(mounted).toBeGreaterThan(0);
+
+    await context.setOffline(false);
+  });
+
+  test('first boot establishes only current-build caches', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(
+      () => navigator.serviceWorker && navigator.serviceWorker.controller !== null,
+      null,
+      { timeout: 10000 }
+    );
+    await page.waitForFunction(async () => {
+      const keys = await caches.keys();
+      return keys.some((k) => k.startsWith('vitality-v2-shell-'));
+    }, null, { timeout: 10000 });
+
+    const keys = await page.evaluate(() => caches.keys());
+    // Every cache must be a current-build cache. If activate ran with stale
+    // caches present, this still holds because activate purges non-keep names.
+    for (const k of keys) {
+      expect(k).toMatch(/^vitality-v2-(shell|runtime)-/);
+    }
+  });
+});
