@@ -12,6 +12,15 @@
 // Backoff: min(500ms * 2^n + jitter(0..500ms), 30 s), max 6 tries per item.
 // Circuit breaker: opens after 3 consecutive failures; closes on online + session ping.
 // IndexedDB overflow (idb-keyval): queued items survive page reload when circuit is open.
+//
+// Ordering contract (since the supabase-js lazy-load change):
+//   - flush() calls into Modules.Identity.getClient(), which returns null
+//     until Modules.Identity.init() has resolved. Items already enqueued
+//     when the client is null stay in the queue and flush on the next tick
+//     once init() resolves.
+//   - Callers MUST gate on auth.status === "signed_in" before enqueuing
+//     (or await Modules.Identity.init() first). The existing isSyncEnabled
+//     guard handles this in app.jsx; new callers must follow suit.
 (function (global) {
   "use strict";
 

@@ -6,3 +6,4 @@ v2/tailwind-out.css
 v2/node_modules/
 .claude/
 v2/test-results/
+v2/.runtime/
