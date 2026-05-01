@@ -1,3 +1,5 @@
+"use strict";
+
 const {
   useState,
   useEffect,
@@ -680,6 +682,7 @@ function HomeScreen({
       "input.length": trimmed.length
     }) : null;
     try {
+      var _data$content;
       const sysPrompt = `You are a nutrition estimation assistant. Given a food description, respond with ONLY a JSON object containing these 16 nutrient keys with numeric values (no text, no markdown): ${NUTRIENT_KEYS.join(", ")}. Units: protein/carbs/fat/fiber/sat_fat in g, epa_dha/calcium/iron/zinc/potassium/magnesium/vit_c in mg, vit_d in IU, vit_e in mg, b12 in mcg, folate in mcg. Estimate reasonable values for a single serving.`;
       const resp = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -704,7 +707,7 @@ function HomeScreen({
       if (resp.status === 429) throw new Error("Rate limited. Try again shortly.");
       if (!resp.ok) throw new Error(`API error: ${resp.status}`);
       const data = await resp.json();
-      const text = data.content?.[0]?.text || "";
+      const text = ((_data$content = data.content) === null || _data$content === void 0 || (_data$content = _data$content[0]) === null || _data$content === void 0 ? void 0 : _data$content.text) || "";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("Could not parse AI response");
       const nutrients = JSON.parse(jsonMatch[0]);
@@ -976,11 +979,14 @@ function LogDaySheet({
       const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
       if (next.length === 1) {
         const r = allRecipes[next[0]];
-        setIngredientStates(r.ingredients.map(ing => ({
-          id: ing.id,
-          qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
-          swapGroup: ing.swapGroup
-        })));
+        setIngredientStates(r.ingredients.map(ing => {
+          var _Modules$Catalog$getI;
+          return {
+            id: ing.id,
+            qty: ((_Modules$Catalog$getI = Modules.Catalog.getIngredient(ing.id)) === null || _Modules$Catalog$getI === void 0 ? void 0 : _Modules$Catalog$getI.defaultQty) || 1,
+            swapGroup: ing.swapGroup
+          };
+        }));
       } else {
         setIngredientStates([]);
       }
@@ -994,11 +1000,14 @@ function LogDaySheet({
     } : s));
   };
   const swapIngredient = (idx, newId) => {
-    setIngredientStates(prev => prev.map((s, i) => i === idx ? {
-      ...s,
-      id: newId,
-      qty: Modules.Catalog.getIngredient(newId)?.defaultQty || 1
-    } : s));
+    setIngredientStates(prev => prev.map((s, i) => {
+      var _Modules$Catalog$getI2;
+      return i === idx ? {
+        ...s,
+        id: newId,
+        qty: ((_Modules$Catalog$getI2 = Modules.Catalog.getIngredient(newId)) === null || _Modules$Catalog$getI2 === void 0 ? void 0 : _Modules$Catalog$getI2.defaultQty) || 1
+      } : s;
+    }));
   };
   const projectedNutrients = useMemo(() => {
     if (!selectedRecipe) return emptyNutrients();
@@ -1013,11 +1022,14 @@ function LogDaySheet({
       const recipe = allRecipes[rid];
       if (!recipe) return null;
       const isSingle = selectedRecipes.length === 1;
-      const ingStates = isSingle ? [...ingredientStates] : recipe.ingredients.map(ing => ({
-        id: ing.id,
-        qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
-        swapGroup: ing.swapGroup
-      }));
+      const ingStates = isSingle ? [...ingredientStates] : recipe.ingredients.map(ing => {
+        var _Modules$Catalog$getI3;
+        return {
+          id: ing.id,
+          qty: ((_Modules$Catalog$getI3 = Modules.Catalog.getIngredient(ing.id)) === null || _Modules$Catalog$getI3 === void 0 ? void 0 : _Modules$Catalog$getI3.defaultQty) || 1,
+          swapGroup: ing.swapGroup
+        };
+      });
       const nutrients = isSingle ? projectedNutrients : Modules.Recipes.computeMealNutrients(recipe, ingStates);
       return {
         id: genId(),
@@ -1068,11 +1080,14 @@ function LogDaySheet({
         nutrients: {
           ...recipe.verifiedTotal
         },
-        ingredientStates: recipe.ingredients.map(ing => ({
-          id: ing.id,
-          qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
-          swapGroup: null
-        })),
+        ingredientStates: recipe.ingredients.map(ing => {
+          var _Modules$Catalog$getI4;
+          return {
+            id: ing.id,
+            qty: ((_Modules$Catalog$getI4 = Modules.Catalog.getIngredient(ing.id)) === null || _Modules$Catalog$getI4 === void 0 ? void 0 : _Modules$Catalog$getI4.defaultQty) || 1,
+            swapGroup: null
+          };
+        }),
         timestamp: Date.now()
       };
       setState(s => Modules.Log.addEntry(s, entry));

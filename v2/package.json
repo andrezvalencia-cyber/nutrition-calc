@@ -25,6 +25,7 @@
   "devDependencies": {
     "@babel/cli": "^7.24.0",
     "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
     "@babel/preset-react": "^7.24.0",
     "@playwright/test": "^1.44.0",
     "idb-keyval": "^6.2.1",
