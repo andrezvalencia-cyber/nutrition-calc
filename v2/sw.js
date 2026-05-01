@@ -7,15 +7,17 @@
 // __BUILD_HASH__ is replaced at build time by scripts/stamp-build-hash.mjs.
 // In local dev (no stamp step), the literal placeholder is used as the
 // cache suffix — every reload reuses the same cache name, which is fine.
+//
+// ES5-compatible: hand-written (not Babel-compiled). Targets iOS Safari 12+.
 
-const BUILD_HASH = "__BUILD_HASH__";
-const SHELL_CACHE = "vitality-v2-shell-" + BUILD_HASH;
-const RUNTIME_CACHE = "vitality-v2-runtime-" + BUILD_HASH;
+var BUILD_HASH = "__BUILD_HASH__";
+var SHELL_CACHE = "vitality-v2-shell-" + BUILD_HASH;
+var RUNTIME_CACHE = "vitality-v2-runtime-" + BUILD_HASH;
 
 // Mirrors the <script>/<link> tags in index.html. If you add a new
 // runtime asset there, add it here too — the SW will not serve it
 // offline otherwise. (See CLAUDE.md §10 — pre-cache invariant.)
-const PRECACHE_URLS = [
+var PRECACHE_URLS = [
   "/",
   "/index.html",
   "/app.js",
@@ -35,29 +37,46 @@ const PRECACHE_URLS = [
   "/src/modules/history/day-history.js",
   "/src/modules/insights/insights-engine.js",
   "/src/modules/observability/tracer.js",
-  "/src/modules/identity/auth.js",
+  "/src/modules/identity/auth.js"
   // External CDN bundles are NOT eagerly pre-cached here.
   // They are served cache-first by the unpkg fetch rule on first access,
   // which avoids fetching ~3 MB during SW install on every new build hash.
 ];
 
-const KEEP_CACHES = new Set([SHELL_CACHE, RUNTIME_CACHE]);
+var KEEP_CACHES = [SHELL_CACHE, RUNTIME_CACHE];
 
-self.addEventListener("install", (event) => {
-  event.waitUntil((async () => {
-    const cache = await caches.open(SHELL_CACHE);
-    // Use individual add() so one failed CDN URL doesn't poison the install.
-    await Promise.all(PRECACHE_URLS.map((u) => cache.add(u).catch(() => {})));
-    await self.skipWaiting();
-  })());
+function keepCache(name) {
+  for (var i = 0; i < KEEP_CACHES.length; i++) {
+    if (KEEP_CACHES[i] === name) return true;
+  }
+  return false;
+}
+
+self.addEventListener("install", function (event) {
+  event.waitUntil(
+    caches.open(SHELL_CACHE).then(function (cache) {
+      // Use individual add() so one failed CDN URL doesn't poison the install.
+      var adds = PRECACHE_URLS.map(function (u) {
+        return cache.add(u).catch(function () {});
+      });
+      return Promise.all(adds);
+    }).then(function () {
+      return self.skipWaiting();
+    })
+  );
 });
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil((async () => {
-    const names = await caches.keys();
-    await Promise.all(names.map((n) => (KEEP_CACHES.has(n) ? null : caches.delete(n))));
-    await self.clients.claim();
-  })());
+self.addEventListener("activate", function (event) {
+  event.waitUntil(
+    caches.keys().then(function (names) {
+      var deletions = names.map(function (n) {
+        return keepCache(n) ? null : caches.delete(n);
+      });
+      return Promise.all(deletions);
+    }).then(function () {
+      return self.clients.claim();
+    })
+  );
 });
 
 function isSameOrigin(url) {
@@ -66,67 +85,82 @@ function isSameOrigin(url) {
 
 function isPrecached(url) {
   if (isSameOrigin(url)) {
-    return PRECACHE_URLS.includes(url.pathname);
+    return PRECACHE_URLS.indexOf(url.pathname) !== -1;
   }
-  return PRECACHE_URLS.includes(url.href);
+  return PRECACHE_URLS.indexOf(url.href) !== -1;
 }
 
-async function cacheFirst(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const hit = await cache.match(request);
-  if (hit) return hit;
-  const res = await fetch(request);
-  if (res && res.ok) cache.put(request, res.clone()).catch(() => {});
-  return res;
-}
-
-async function staleWhileRevalidate(request, cacheName) {
-  const cache = await caches.open(cacheName);
-  const hit = await cache.match(request);
-  const fetchPromise = fetch(request).then((res) => {
-    if (res && res.ok) cache.put(request, res.clone()).catch(() => {});
-    return res;
-  }).catch(() => hit);
-  return hit || fetchPromise;
-}
-
-async function networkFirst(request, cacheName, timeoutMs) {
-  const cache = await caches.open(cacheName);
-  let timer;
-  const network = fetch(request).then((res) => {
-    if (res && res.ok && request.method === "GET") {
-      cache.put(request, res.clone()).catch(() => {});
-    }
-    return res;
-  });
-  try {
-    if (timeoutMs && timeoutMs > 0) {
-      const timeout = new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error("net-timeout")), timeoutMs);
+function cacheFirst(request, cacheName) {
+  return caches.open(cacheName).then(function (cache) {
+    return cache.match(request).then(function (hit) {
+      if (hit) return hit;
+      return fetch(request).then(function (res) {
+        if (res && res.ok) {
+          cache.put(request, res.clone()).catch(function () {});
+        }
+        return res;
       });
-      const res = await Promise.race([network, timeout]);
-      clearTimeout(timer);
-      return res;
-    }
-    return await network;
-  } catch (e) {
-    clearTimeout(timer);
-    // Cache fallback. Note: POST requests are not cacheable per Cache API
-    // semantics, so this branch only ever returns hits for GETs. For the
-    // Anthropic POST endpoint, this effectively degrades to network-only.
-    const hit = await cache.match(request);
-    if (hit) return hit;
-    throw e;
-  }
+    });
+  });
 }
 
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
+function staleWhileRevalidate(request, cacheName) {
+  return caches.open(cacheName).then(function (cache) {
+    return cache.match(request).then(function (hit) {
+      var fetchPromise = fetch(request).then(function (res) {
+        if (res && res.ok) {
+          cache.put(request, res.clone()).catch(function () {});
+        }
+        return res;
+      }).catch(function () { return hit; });
+      return hit || fetchPromise;
+    });
+  });
+}
+
+function networkFirst(request, cacheName, timeoutMs) {
+  return caches.open(cacheName).then(function (cache) {
+    var timer;
+    var network = fetch(request).then(function (res) {
+      if (res && res.ok && request.method === "GET") {
+        cache.put(request, res.clone()).catch(function () {});
+      }
+      return res;
+    });
+
+    var raced;
+    if (timeoutMs && timeoutMs > 0) {
+      var timeout = new Promise(function (_, reject) {
+        timer = setTimeout(function () { reject(new Error("net-timeout")); }, timeoutMs);
+      });
+      raced = Promise.race([network, timeout]);
+    } else {
+      raced = network;
+    }
+
+    return raced.then(function (res) {
+      if (timer) clearTimeout(timer);
+      return res;
+    }).catch(function (e) {
+      if (timer) clearTimeout(timer);
+      // Cache fallback. Note: POST requests are not cacheable per Cache API
+      // semantics, so this branch only ever returns hits for GETs. For the
+      // Anthropic POST endpoint, this effectively degrades to network-only.
+      return cache.match(request).then(function (hit) {
+        if (hit) return hit;
+        throw e;
+      });
+    });
+  });
+}
+
+self.addEventListener("fetch", function (event) {
+  var request = event.request;
 
   if (request.method !== "GET") return; // bypass SW for POST/PUT/DELETE
 
-  let url;
-  try { url = new URL(request.url); } catch { return; }
+  var url;
+  try { url = new URL(request.url); } catch (e) { return; }
 
   // Same-origin navigation → SWR for the HTML shell.
   if (request.mode === "navigate" && isSameOrigin(url)) {
@@ -166,5 +200,5 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Anything else → network-only (default browser behaviour).
+  // Anything else — network-only (default browser behaviour).
 });
