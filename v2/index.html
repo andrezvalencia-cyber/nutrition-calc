@@ -90,62 +90,65 @@
   <div class="bg-glow-orb-2"></div>
   <div id="root"></div>
 
+  <!-- Performance: defer on every body script — preserves execution order
+       (per HTML spec) but unblocks the parser so first paint is not gated
+       on serial download. Supabase JS UMD is intentionally NOT static here;
+       it is dynamically injected by Modules.Identity (auth.js) on first
+       auth method call so its ~120 KB does not sit on the critical path. -->
+
   <!-- Local persistence layer (window.LocalStore) -->
-  <script src="src/store/local-store.js"></script>
+  <script defer src="src/store/local-store.js"></script>
 
   <!-- Data Layer -->
-  <script src="data.js"></script>
+  <script defer src="data.js"></script>
 
   <!-- Catalog accessor (window.Modules.Catalog) -->
-  <script src="src/modules/catalog/ingredients.js"></script>
+  <script defer src="src/modules/catalog/ingredients.js"></script>
 
   <!-- Recipes (window.Modules.Recipes) -->
-  <script src="src/modules/recipes/recipes.js"></script>
+  <script defer src="src/modules/recipes/recipes.js"></script>
 
   <!-- Day log (window.Modules.Log) -->
-  <script src="src/modules/log/day-log.js"></script>
+  <script defer src="src/modules/log/day-log.js"></script>
 
   <!-- Gap engine (window.Modules.GapEngine) -->
-  <script src="src/modules/log/gap-engine.js"></script>
+  <script defer src="src/modules/log/gap-engine.js"></script>
 
   <!-- Carryover engine (window.Modules.Carryover) -->
-  <script src="src/modules/carryover/carryover-engine.js"></script>
+  <script defer src="src/modules/carryover/carryover-engine.js"></script>
 
   <!-- Day history (window.Modules.History) — depends on Carryover -->
-  <script src="src/modules/history/day-history.js"></script>
+  <script defer src="src/modules/history/day-history.js"></script>
 
   <!-- Insights engine (window.Modules.Insights) -->
-  <script src="src/modules/insights/insights-engine.js"></script>
+  <script defer src="src/modules/insights/insights-engine.js"></script>
 
   <!-- Tracer (OTLP/JSON console exporter + optional Supabase beacon) -->
-  <script src="src/modules/observability/tracer.js"></script>
+  <script defer src="src/modules/observability/tracer.js"></script>
 
   <!-- Supabase project config (window.SupabaseConfig) -->
-  <script src="src/store/supabase-config.js"></script>
+  <script defer src="src/store/supabase-config.js"></script>
 
   <!-- idb-keyval UMD (pinned + SRI) — used only for the write-behind offline queue -->
-  <script crossorigin="anonymous" integrity="sha384-oM43ZjLL5cj/w3ORvbvwAubendEp51/buLZ9CGEMjp5ExAxNxAC7N7GJ2X2Oreb9" src="https://unpkg.com/idb-keyval@6.2.1/dist/umd.js"></script>
+  <script defer crossorigin="anonymous" integrity="sha384-oM43ZjLL5cj/w3ORvbvwAubendEp51/buLZ9CGEMjp5ExAxNxAC7N7GJ2X2Oreb9" src="https://unpkg.com/idb-keyval@6.2.1/dist/umd.js"></script>
 
-  <!-- Supabase JS UMD (pinned + SRI) -->
-  <script crossorigin="anonymous" integrity="sha384-OMZvx3Vy2g+m2/bV7wq4vKCSjS3P2+OVcOXSaqWaoK3ZoSAHaje1LSM9FK4MNk2J" src="https://unpkg.com/@supabase/supabase-js@2.105.0/dist/umd/supabase.js"></script>
-
-  <!-- Identity & auth wrapper (window.Modules.Identity) -->
-  <script src="src/modules/identity/auth.js"></script>
+  <!-- Identity & auth wrapper (window.Modules.Identity) — lazy-loads supabase-js -->
+  <script defer src="src/modules/identity/auth.js"></script>
 
   <!-- Remote (Supabase) read-only store (window.RemoteStore) -->
-  <script src="src/store/remote-store.js"></script>
+  <script defer src="src/store/remote-store.js"></script>
 
   <!-- Write-behind queue (window.WriteBehind) — Phase 5 -->
-  <script src="src/store/write-behind.js"></script>
+  <script defer src="src/store/write-behind.js"></script>
 
   <!-- Multi-tab leader election (window.SyncLeader) — Phase 6 -->
-  <script src="src/store/sync-leader.js"></script>
+  <script defer src="src/store/sync-leader.js"></script>
 
   <!-- React 18 UMD -->
-  <script crossorigin="anonymous" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
-  <script crossorigin="anonymous" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script defer crossorigin="anonymous" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+  <script defer crossorigin="anonymous" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 
   <!-- Pre-compiled app (no runtime Babel — Safari safe) -->
-  <script src="app.js"></script>
+  <script defer src="app.js"></script>
 </body>
 </html>

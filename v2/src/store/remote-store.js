@@ -11,6 +11,16 @@
 //
 // Loaded as a plain <script> after src/modules/identity/auth.js so that
 // Modules.Identity.getClient() is available.
+//
+// Ordering contract (since the supabase-js lazy-load change):
+//   - getClient() returns null until Modules.Identity.init() has resolved
+//     and the supabase-js CDN script has loaded.
+//   - Today this is satisfied because every caller (CloudSync) only fires
+//     after auth.status === "signed_in", which itself depends on
+//     getSession() — which awaits init() internally.
+//   - New callers MUST either gate on auth.status, or explicitly await
+//     Modules.Identity.init() before invoking RemoteStore.* methods.
+//     Otherwise they'll silently get an empty result.
 (function (global) {
   "use strict";
 
