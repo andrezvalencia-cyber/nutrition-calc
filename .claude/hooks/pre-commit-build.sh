@@ -48,15 +48,25 @@ if [ ! -d v2/node_modules ]; then
   exit 0
 fi
 
+# Skip auto-stage if any trigger file is partially staged — let the native hook
+# reject loudly so the user sees one consistent error instead of silent fixup.
+partial_check='^v2/(src/.*\.jsx?|input\.css|tailwind\.config\.js)$'
+for path in $(git diff --cached --name-only --diff-filter=ACMR | grep -E "$partial_check" || true); do
+  if ! git diff --quiet -- "$path" 2>/dev/null; then
+    echo "claude-hook: $path is partially staged; skipping auto-build (native hook will reject)." 1>&2
+    exit 0
+  fi
+done
+
 echo "claude-hook: rebuilding v2 before commit..."
 (
   cd v2
-  if ! npm run build:css >/dev/null 2>&1; then
-    echo "claude-hook: 'npm run build:css' FAILED — fix Tailwind config / input.css before committing." 1>&2
+  if ! npm run build:css >/dev/null; then
+    echo "claude-hook: 'npm run build:css' FAILED (see Tailwind error above)." 1>&2
     exit 2
   fi
-  if ! npm run build >/dev/null 2>&1; then
-    echo "claude-hook: 'npm run build' FAILED — fix JSX in src/app.jsx before committing." 1>&2
+  if ! npm run build >/dev/null; then
+    echo "claude-hook: 'npm run build' FAILED (see Babel error above)." 1>&2
     exit 2
   fi
 )
