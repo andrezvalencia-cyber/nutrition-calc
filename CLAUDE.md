@@ -1,7 +1,12 @@
 # CLAUDE.md — Vitality Nutrition Calculator
 
-## Build (after any v2/src/app.jsx edit)
-`cd v2 && npm run build:css && npm run build` — both must run; CSS scans the JSX, Babel compiles it. Never ship one stale.
+## Build
+Builds run automatically. Do not invoke them by hand unless debugging hook output.
+- **Native git hook** (`.githooks/pre-commit`): runs `npm run build:css` + `npm run build`, blocks commit if `v2/app.js` is stale or either build errors.
+- **Claude PreToolUse hook** (`.claude/hooks/pre-commit-build.sh`): rebuilds and auto-stages `v2/app.js` when Claude issues `git commit`.
+- **CI** (`.github/workflows/verify-build.yml`): rebuilds on every push/PR; commit cannot land if `v2/app.js` doesn't match `babel(v2/src/app.jsx)`. Bypass via `git commit --no-verify` is therefore non-shippable.
+- First-time setup: `cd v2 && npm install` (its `prepare` script wires `core.hooksPath=.githooks`).
+- Manual rebuild (debugging only): `cd v2 && npm run build:css && npm run build`.
 
 ## Code constraints
 - No bundler, TypeScript, or ES imports. React 18 UMD via CDN, Babel CLI for JSX.
@@ -25,7 +30,7 @@ The setter no-ops the real assignment. See `v2/tests/integration.test.js` → `c
 ## Repo
 - `v2/tailwind-out.css` is gitignored — CI regenerates on every push. Never trust your local copy.
 - The project lives entirely under `v2/`. CI deploys only `v2/`. (V1 was removed.)
-- After editing `v2/src/app.jsx`: commit BOTH `v2/src/app.jsx` and recompiled `v2/app.js`.
+- `v2/app.js` is committed and must equal `babel(v2/src/app.jsx)`. The pre-commit hook enforces this; do not edit `app.js` by hand.
 
 ## Architecture gotchas
 - `v2/tailwind.config.js` `content` MUST include `"./src/app.jsx"`. CSS builds before Babel, so removing it ships a CSS missing every component-level utility class. Local dev hides this.
@@ -47,7 +52,7 @@ The setter no-ops the real assignment. See `v2/tests/integration.test.js` → `c
 
 ### Security fix workflow (TDD, mandatory)
 1. **Reproduce** — failing Playwright test in `v2/tests/integration.test.js` first.
-2. **Fix** — edit, run the build sequence above. Commit source + compiled.
+2. **Fix** — edit `v2/src/app.jsx`; pre-commit hook compiles + stages `v2/app.js`.
 3. **Validate** — `(cd v2 && npx serve -p 8765 &) && sleep 1 && cd v2 && npm test`. No regressions.
 
 For changes touching auth/CSP/API key/CI, invoke the `security-reviewer` subagent for an adversarial pass before merging. Run `/security-review` before every PR touching `v2/src/app.jsx`, `v2/index.html`, `v2/package*.json`, or `.github/workflows/**`.
