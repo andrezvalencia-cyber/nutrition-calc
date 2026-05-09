@@ -1,0 +1,46 @@
+name: Verify v2 Build Determinism
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-app-js:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: v2/package-lock.json
+
+      - name: Install v2 dependencies
+        working-directory: v2
+        run: npm ci 2>&1 | grep -E 'added [0-9]+|npm error|npm warn' || true
+
+      - name: Verify Tailwind build runs cleanly
+        working-directory: v2
+        run: npm run build:css
+
+      - name: Compile JSX (v2)
+        working-directory: v2
+        run: npm run build
+
+      - name: Verify v2/app.js matches babel(v2/src/app.jsx)
+        run: |
+          if ! git diff --exit-status -- v2/app.js; then
+            echo ""
+            echo "::error::v2/app.js is out of sync with v2/src/app.jsx."
+            echo "::error::Run 'cd v2 && npm run build && git add v2/app.js' locally and push again."
+            echo "::error::Reminder: pre-commit hook runs this automatically; '--no-verify' bypass is the usual cause."
+            exit 1
+          fi
+          echo "v2/app.js is in sync with v2/src/app.jsx."

@@ -4,6 +4,10 @@ stitch_nutrition_calc_ios_26.zip
 stitch_preview/
 v2/tailwind-out.css
 v2/node_modules/
-.claude/
+# Per-user Claude state stays local; project hooks/settings are committed.
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
+.claude/settings.local.json
 v2/test-results/
 v2/.runtime/
