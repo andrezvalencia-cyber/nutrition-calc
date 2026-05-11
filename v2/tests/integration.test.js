@@ -1134,6 +1134,117 @@ test.describe('multi-tab leader election (phase 6)', () => {
   });
 });
 
+// ── Recipe nutrient computation ──────────────────────────────────────────────
+// Tripwire: verifiedTotal must equal sum of ingredients at default qty (±0.5).
+// Drift: swap-and-revert must return byte-identical totals (catches the legacy
+// Mode A / Mode B divergence — see plan refactor/recipe-logic-simplicity).
+
+test.describe('recipe nutrient computation', () => {
+  test('every recipe.verifiedTotal matches sum of ingredients at default qty (±0.5)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => window.Modules?.Recipes && window.Modules?.Catalog);
+    const failures = await page.evaluate(() => {
+      const out = [];
+      const all = window.Modules.Recipes.getAllRecipes();
+      Object.entries(all).forEach(([id, recipe]) => {
+        const states = recipe.ingredients.map((i) => {
+          const ing = window.Modules.Catalog.getIngredient(i.id);
+          return { id: i.id, qty: ing ? ing.defaultQty : 1 };
+        });
+        const computed = window.Modules.Recipes.computeMealNutrients(recipe, states);
+        Object.keys(recipe.verifiedTotal).forEach((k) => {
+          const delta = Math.abs((computed[k] || 0) - (recipe.verifiedTotal[k] || 0));
+          if (delta > 0.5) {
+            out.push({
+              recipe: id,
+              key: k,
+              computed: computed[k],
+              expected: recipe.verifiedTotal[k],
+              delta: Math.round(delta * 100) / 100,
+            });
+          }
+        });
+      });
+      return out;
+    });
+    expect(failures, JSON.stringify(failures, null, 2)).toEqual([]);
+  });
+
+  test('morning_shake totals are byte-identical after swap-and-revert', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => window.Modules?.Recipes && window.Modules?.Catalog);
+    const { before, after } = await page.evaluate(() => {
+      const recipe = window.Modules.Recipes.getAllRecipes().morning_shake;
+      const baseStates = recipe.ingredients.map((i) => ({
+        id: i.id,
+        qty: window.Modules.Catalog.getIngredient(i.id).defaultQty,
+      }));
+      const before = window.Modules.Recipes.computeMealNutrients(recipe, baseStates);
+      const soyQty = window.Modules.Catalog.getIngredient('soy_protein').defaultQty;
+      const swapped = baseStates.map((s, i) =>
+        i === 0 ? { id: 'soy_protein', qty: soyQty } : s,
+      );
+      window.Modules.Recipes.computeMealNutrients(recipe, swapped);
+      const reverted = baseStates.map((s) => ({ ...s }));
+      const after = window.Modules.Recipes.computeMealNutrients(recipe, reverted);
+      return { before, after };
+    });
+    expect(after).toEqual(before);
+  });
+
+  test('unknown ingredient id warns and contributes zeros', async ({ page }) => {
+    const warnings = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'warning') warnings.push(msg.text());
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => window.Modules?.Recipes && window.Modules?.Catalog);
+    const totals = await page.evaluate(() => {
+      const recipe = window.Modules.Recipes.getAllRecipes().morning_shake;
+      const states = [{ id: '__nonexistent_xyz__', qty: 100 }];
+      return window.Modules.Recipes.computeMealNutrients(recipe, states);
+    });
+    Object.values(totals).forEach((v) => expect(v).toBe(0));
+    expect(warnings.some((w) => w.includes('__nonexistent_xyz__'))).toBe(true);
+  });
+
+  test('invalid qty (NaN/Infinity/negative/undefined) warns and contributes zeros', async ({ page }) => {
+    const warnings = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'warning') warnings.push(msg.text());
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => window.Modules?.Recipes && window.Modules?.Catalog);
+    const cases = await page.evaluate(() => {
+      const recipe = window.Modules.Recipes.getAllRecipes().morning_shake;
+      const id = recipe.ingredients[0].id;
+      return {
+        nan: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: NaN }]),
+        inf: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: Infinity }]),
+        neg: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: -5 }]),
+        undef: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: undefined }]),
+      };
+    });
+    Object.values(cases).forEach((totals) => {
+      Object.values(totals).forEach((v) => expect(v).toBe(0));
+    });
+    expect(warnings.length).toBeGreaterThan(0);
+  });
+
+  test('numeric string qty is coerced same as number', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => window.Modules?.Recipes && window.Modules?.Catalog);
+    const { fromNumber, fromString } = await page.evaluate(() => {
+      const recipe = window.Modules.Recipes.getAllRecipes().morning_shake;
+      const id = recipe.ingredients[0].id;
+      const fromNumber = window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: 48 }]);
+      const fromString = window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: '48' }]);
+      return { fromNumber, fromString };
+    });
+    expect(fromString).toEqual(fromNumber);
+  });
+});
+
 // ── Phase 7: Service Worker offline shell ────────────────────────────────────
 
 test.describe('phase 7: service worker', () => {
