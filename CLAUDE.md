@@ -24,8 +24,8 @@ The setter no-ops the real assignment. See `v2/tests/integration.test.js` → `c
 
 ## Repo
 - `v2/tailwind-out.css` is gitignored — CI regenerates on every push. Never trust your local copy.
-- V1 (repo root) and V2 (`v2/`) are fully isolated. CI deploys only `v2/`.
-- After editing `v2/src/app.jsx`: commit BOTH `src/app.jsx` and recompiled `app.js`.
+- The project lives entirely under `v2/`. CI deploys only `v2/`. (V1 was removed.)
+- After editing `v2/src/app.jsx`: commit BOTH `v2/src/app.jsx` and recompiled `v2/app.js`.
 
 ## Architecture gotchas
 - `v2/tailwind.config.js` `content` MUST include `"./src/app.jsx"`. CSS builds before Babel, so removing it ships a CSS missing every component-level utility class. Local dev hides this.
