@@ -5,7 +5,19 @@
 // as a tripwire in v2/tests/integration.test.js).
 //
 // Public API: window.Modules.Recipes.{ getAllRecipes, computeMealNutrients }
+//
+// Soft-fail policy: getIngNutrients warns once (per id) and returns zeros for
+// unknown ingredient ids or non-finite/negative qty. Numeric strings ("48") are
+// coerced via Number(). Rationale: a typo or stale state must not corrupt the
+// totals UI with NaN/Infinity, but must surface in devtools.
 (function (global) {
+  var _warned = new Set();
+  function warnOnce(key, msg) {
+    if (_warned.has(key)) return;
+    _warned.add(key);
+    if (typeof console !== "undefined" && console.warn) console.warn(msg);
+  }
+
   function getAllRecipes() {
     return Object.assign({}, (typeof RECIPES !== "undefined" ? RECIPES : {}),
                              (typeof SUPPLEMENT_RECIPES !== "undefined" ? SUPPLEMENT_RECIPES : {}));
@@ -13,8 +25,18 @@
 
   function getIngNutrients(id, qty) {
     var ing = global.Modules.Catalog.getIngredient(id);
-    if (!ing) return emptyNutrients();
-    var ratio = qty / ing.defaultQty;
+    if (!ing) {
+      warnOnce("unknown-ingredient:" + id,
+        "Modules.Recipes: unknown ingredient id '" + id + "' — contributing zeros");
+      return emptyNutrients();
+    }
+    var q = Number(qty);
+    if (!isFinite(q) || q < 0) {
+      warnOnce("invalid-qty:" + id,
+        "Modules.Recipes: invalid qty '" + String(qty) + "' for ingredient '" + id + "' — contributing zeros");
+      return emptyNutrients();
+    }
+    var ratio = q / ing.defaultQty;
     var n = {};
     NUTRIENT_KEYS.forEach(function (k) { n[k] = (ing[k] || 0) * ratio; });
     return n;

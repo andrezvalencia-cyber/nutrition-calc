@@ -1191,6 +1191,58 @@ test.describe('recipe nutrient computation', () => {
     });
     expect(after).toEqual(before);
   });
+
+  test('unknown ingredient id warns and contributes zeros', async ({ page }) => {
+    const warnings = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'warning') warnings.push(msg.text());
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => window.Modules?.Recipes && window.Modules?.Catalog);
+    const totals = await page.evaluate(() => {
+      const recipe = window.Modules.Recipes.getAllRecipes().morning_shake;
+      const states = [{ id: '__nonexistent_xyz__', qty: 100 }];
+      return window.Modules.Recipes.computeMealNutrients(recipe, states);
+    });
+    Object.values(totals).forEach((v) => expect(v).toBe(0));
+    expect(warnings.some((w) => w.includes('__nonexistent_xyz__'))).toBe(true);
+  });
+
+  test('invalid qty (NaN/Infinity/negative/undefined) warns and contributes zeros', async ({ page }) => {
+    const warnings = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'warning') warnings.push(msg.text());
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => window.Modules?.Recipes && window.Modules?.Catalog);
+    const cases = await page.evaluate(() => {
+      const recipe = window.Modules.Recipes.getAllRecipes().morning_shake;
+      const id = recipe.ingredients[0].id;
+      return {
+        nan: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: NaN }]),
+        inf: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: Infinity }]),
+        neg: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: -5 }]),
+        undef: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: undefined }]),
+      };
+    });
+    Object.values(cases).forEach((totals) => {
+      Object.values(totals).forEach((v) => expect(v).toBe(0));
+    });
+    expect(warnings.length).toBeGreaterThan(0);
+  });
+
+  test('numeric string qty is coerced same as number', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => window.Modules?.Recipes && window.Modules?.Catalog);
+    const { fromNumber, fromString } = await page.evaluate(() => {
+      const recipe = window.Modules.Recipes.getAllRecipes().morning_shake;
+      const id = recipe.ingredients[0].id;
+      const fromNumber = window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: 48 }]);
+      const fromString = window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: '48' }]);
+      return { fromNumber, fromString };
+    });
+    expect(fromString).toEqual(fromNumber);
+  });
 });
 
 // ── Phase 7: Service Worker offline shell ────────────────────────────────────
