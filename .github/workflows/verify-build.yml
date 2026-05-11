@@ -36,7 +36,7 @@ jobs:
 
       - name: Verify v2/app.js matches babel(v2/src/app.jsx)
         run: |
-          if ! git diff --exit-status -- v2/app.js; then
+          if ! git diff --exit-code -- v2/app.js; then
             echo ""
             echo "::error::v2/app.js is out of sync with v2/src/app.jsx."
             echo "::error::Run 'cd v2 && npm run build && git add v2/app.js' locally and push again."
