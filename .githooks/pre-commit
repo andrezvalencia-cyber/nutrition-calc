@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Deterministic build-on-commit hook.
+# Contract:
+#   1. Runs `npm run build:css` and `npm run build` in v2/ when JSX/CSS-impacting
+#      files are staged. Fails the commit on any non-zero exit (Tailwind config
+#      error, Babel syntax error, etc.).
+#   2. Performs a strict diff check ONLY on v2/app.js. If the staged tree's
+#      compiled artifact does not match what Babel just produced, the commit
+#      is blocked.
+#   3. Does NOT diff-check v2/tailwind-out.css — that file is gitignored and CI
+#      regenerates it on every push (per CLAUDE.md).
+# Bypass: `git commit --no-verify`. CI re-runs the same checks; bypass cannot
+# ship stale artifacts.
+
+set -euo pipefail
+
+trigger_files='^v2/(src/.*\.jsx?|input\.css|tailwind\.config\.js|babel\.config\.js|package(-lock)?\.json)$'
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR)"
+if ! echo "$staged" | grep -qE "$trigger_files"; then
+  exit 0
+fi
+
+# Reject partial staging of build inputs. v2/app.js is babel(v2/src/app.jsx) —
+# the compiled artifact is a pure function of the full source. Partially staged
+# JSX would produce a compiled artifact that does not match any single tree.
+partial_check_files='^v2/(src/.*\.jsx?|input\.css|tailwind\.config\.js)$'
+for path in $(echo "$staged" | grep -E "$partial_check_files"); do
+  if ! git diff --quiet -- "$path"; then
+    echo "" >&2
+    echo "pre-commit: $path is partially staged." >&2
+    echo "  Stage the full file (\`git add $path\`) or split into separate commits." >&2
+    echo "  Reason: v2/app.js is babel(src/app.jsx); a partial-stage produces an incoherent artifact." >&2
+    echo "" >&2
+    exit 1
+  fi
+done
+
+if [ ! -d v2/node_modules ]; then
+  echo "pre-commit: v2/node_modules missing. Run 'cd v2 && npm install' first." >&2
+  exit 1
+fi
+
+echo "pre-commit: building v2 (CSS + JSX)..."
+(
+  cd v2
+  npm run build:css >/dev/null || {
+    echo "pre-commit: 'npm run build:css' FAILED (see Tailwind error above)." >&2
+    exit 1
+  }
+  npm run build >/dev/null || {
+    echo "pre-commit: 'npm run build' FAILED (see Babel error above)." >&2
+    exit 1
+  }
+)
+
+if ! git diff --quiet -- v2/app.js; then
+  echo "" >&2
+  echo "pre-commit: app.js is stale — rebuild and recommit" >&2
+  echo "  Run: git add v2/app.js && git commit ..." >&2
+  echo "" >&2
+  exit 1
+fi
+
+exit 0
