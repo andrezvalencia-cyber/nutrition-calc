@@ -1072,22 +1072,21 @@ function LogDaySheet({
       const recipe = allRecipes[suppId];
       if (!recipe) return;
       const entryId = genId();
+      const ingredientStates = recipe.ingredients.map(ing => {
+        var _Modules$Catalog$getI4;
+        return {
+          id: ing.id,
+          qty: ((_Modules$Catalog$getI4 = Modules.Catalog.getIngredient(ing.id)) === null || _Modules$Catalog$getI4 === void 0 ? void 0 : _Modules$Catalog$getI4.defaultQty) || 1,
+          swapGroup: null
+        };
+      });
       const entry = {
         id: entryId,
         recipeId: suppId,
         name: recipe.name,
         emoji: recipe.emoji,
-        nutrients: {
-          ...recipe.verifiedTotal
-        },
-        ingredientStates: recipe.ingredients.map(ing => {
-          var _Modules$Catalog$getI4;
-          return {
-            id: ing.id,
-            qty: ((_Modules$Catalog$getI4 = Modules.Catalog.getIngredient(ing.id)) === null || _Modules$Catalog$getI4 === void 0 ? void 0 : _Modules$Catalog$getI4.defaultQty) || 1,
-            swapGroup: null
-          };
-        }),
+        nutrients: Modules.Recipes.computeMealNutrients(recipe, ingredientStates),
+        ingredientStates,
         timestamp: Date.now()
       };
       setState(s => Modules.Log.addEntry(s, entry));
@@ -1285,7 +1284,15 @@ function ClosingGaps({
     const result = [];
     for (const [id, r] of suppRecipes) {
       if (checkedSupps[id]) continue;
-      const helps = gaps.filter(g => g.type === "under" && (r.verifiedTotal[g.key] || 0) > 0);
+      const rStates = r.ingredients.map(i => {
+        var _Modules$Catalog$getI5;
+        return {
+          id: i.id,
+          qty: ((_Modules$Catalog$getI5 = Modules.Catalog.getIngredient(i.id)) === null || _Modules$Catalog$getI5 === void 0 ? void 0 : _Modules$Catalog$getI5.defaultQty) || 1
+        };
+      });
+      const rTotals = Modules.Recipes.computeMealNutrients(r, rStates);
+      const helps = gaps.filter(g => g.type === "under" && (rTotals[g.key] || 0) > 0);
       if (helps.length > 0) result.push({
         id,
         name: r.name,

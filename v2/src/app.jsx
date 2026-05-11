@@ -938,17 +938,18 @@
           const recipe = allRecipes[suppId];
           if (!recipe) return;
           const entryId = genId();
+          const ingredientStates = recipe.ingredients.map((ing) => ({
+            id: ing.id,
+            qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
+            swapGroup: null,
+          }));
           const entry = {
             id: entryId,
             recipeId: suppId,
             name: recipe.name,
             emoji: recipe.emoji,
-            nutrients: { ...recipe.verifiedTotal },
-            ingredientStates: recipe.ingredients.map((ing) => ({
-              id: ing.id,
-              qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
-              swapGroup: null,
-            })),
+            nutrients: Modules.Recipes.computeMealNutrients(recipe, ingredientStates),
+            ingredientStates,
             timestamp: Date.now(),
           };
           setState((s) => Modules.Log.addEntry(s, entry));
@@ -1175,7 +1176,12 @@
         const result = [];
         for (const [id, r] of suppRecipes) {
           if (checkedSupps[id]) continue;
-          const helps = gaps.filter((g) => g.type === "under" && (r.verifiedTotal[g.key] || 0) > 0);
+          const rStates = r.ingredients.map((i) => ({
+            id: i.id,
+            qty: Modules.Catalog.getIngredient(i.id)?.defaultQty || 1,
+          }));
+          const rTotals = Modules.Recipes.computeMealNutrients(r, rStates);
+          const helps = gaps.filter((g) => g.type === "under" && (rTotals[g.key] || 0) > 0);
           if (helps.length > 0) result.push({ id, name: r.name, helps: helps.map((h) => h.label) });
         }
         return result;

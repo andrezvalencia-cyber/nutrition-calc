@@ -1,6 +1,8 @@
 // Recipes module — read access to combined recipe catalog and meal-nutrient math.
-// Source data (RECIPES, SUPPLEMENT_RECIPES) lives in data.js; this module gives the
-// app a stable API and centralizes the swap/qty delta math.
+// Source data (RECIPES, SUPPLEMENT_RECIPES) lives in data.js; this module gives
+// the app a stable API for nutrient totals. computeMealNutrients always sums
+// from `states` via getIngNutrients — recipe.verifiedTotal is data-only (tested
+// as a tripwire in v2/tests/integration.test.js).
 //
 // Public API: window.Modules.Recipes.{ getAllRecipes, computeMealNutrients }
 (function (global) {
@@ -18,27 +20,14 @@
     return n;
   }
 
+  // Single sum path. verifiedTotal in data.js is data-only (tested as a tripwire
+  // in v2/tests/integration.test.js — must equal sum of ingredients at defaults).
   function computeMealNutrients(recipe, states) {
-    if (!recipe || !states.length) return emptyNutrients();
-    var hasMod = states.some(function (s, i) {
-      var o = recipe.ingredients[i];
-      if (!o) return true;
-      var oi = global.Modules.Catalog.getIngredient(o.id);
-      return s.id !== o.id || s.qty !== (oi ? oi.defaultQty : 1);
-    });
-    if (!hasMod) return Object.assign({}, recipe.verifiedTotal);
-    var t = Object.assign({}, recipe.verifiedTotal);
-    states.forEach(function (s, i) {
-      var o = recipe.ingredients[i];
-      if (!o) return;
-      var oi = global.Modules.Catalog.getIngredient(o.id);
-      if (!oi) return;
-      var oq = oi.defaultQty;
-      if (s.id !== o.id || s.qty !== oq) {
-        var on = getIngNutrients(o.id, oq);
-        var nn = getIngNutrients(s.id, s.qty);
-        NUTRIENT_KEYS.forEach(function (k) { t[k] = t[k] - on[k] + nn[k]; });
-      }
+    if (!recipe || !states || !states.length) return emptyNutrients();
+    var t = emptyNutrients();
+    states.forEach(function (s) {
+      var n = getIngNutrients(s.id, s.qty);
+      NUTRIENT_KEYS.forEach(function (k) { t[k] += n[k]; });
     });
     return t;
   }

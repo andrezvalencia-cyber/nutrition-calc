@@ -437,10 +437,12 @@ const RECIPES = {
   },
   standard_lunch: {
     name: "Lunch", emoji: "\u{1F957}", type: "meal",
+    // Data audit (refactor/recipe-logic-simplicity): six values were stale
+    // hand-curates; corrected to match sum of ingredients at default qty.
     verifiedTotal: {
-      protein:30.6, carbs:40.9, fat:32.3, fiber:14.9, sat_fat:4.3,
-      epa_dha:0, calcium:223, iron:9.0, zinc:6.4, vit_d:0,
-      vit_e:6.7, b12:8.0, folate:493, vit_c:189, potassium:1421, magnesium:292
+      protein:31.7, carbs:40.1, fat:32.3, fiber:14.9, sat_fat:4.3,
+      epa_dha:0, calcium:217, iron:9.0, zinc:6.4, vit_d:0,
+      vit_e:6.7, b12:8.0, folate:441, vit_c:177, potassium:1395, magnesium:292
     },
     ingredients: [
       { id:"veg_meat_lentil", swapGroup:"lunch_protein" },
