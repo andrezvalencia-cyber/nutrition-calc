@@ -124,3 +124,28 @@ create policy "spans insert own only"
 --        );
 --      (Requires the pg_cron extension; enable in Database → Extensions.)
 -- ─────────────────────────────────────────────────────────────────────
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Data API grants (Supabase policy change).
+--
+-- New projects from 2026-05-30 and all existing projects from 2026-10-30
+-- no longer auto-expose public-schema tables to PostgREST / supabase-js /
+-- GraphQL; explicit GRANTs are required or PostgREST returns 42501.
+--
+-- Scope = exactly the operations the client issues (see
+-- v2/src/store/remote-store.js and v2/src/store/write-behind.js):
+--   • days, day_entries: select + insert + update (upsert path).
+--     DELETE is intentionally withheld — day_entries deletions are
+--     soft-deletes via `update deleted_at` to keep LWW merges safe
+--     (Pillar 3, Phase 5); withholding the grant is defense-in-depth
+--     against a session token exfiltrating history via hard delete.
+--   • telemetry_spans: insert only — mirrors the "no client read"
+--     RLS posture above (lines 109–113).
+--   • anon is never granted — sync is gated on a signed-in session and
+--     public sign-ups are disabled (see line 4).
+--   • service_role is omitted — it bypasses RLS and PostgREST grants
+--     by design.
+-- ─────────────────────────────────────────────────────────────────────
+grant select, insert, update on public.days            to authenticated;
+grant select, insert, update on public.day_entries     to authenticated;
+grant insert                 on public.telemetry_spans to authenticated;
