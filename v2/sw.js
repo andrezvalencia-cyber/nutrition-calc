@@ -37,6 +37,7 @@ var PRECACHE_URLS = [
   "/src/modules/carryover/carryover-engine.js",
   "/src/modules/history/day-history.js",
   "/src/modules/insights/insights-engine.js",
+  "/src/modules/sync/sync-map.js",
   "/src/modules/observability/tracer.js",
   "/src/modules/identity/auth.js"
   // External CDN bundles are NOT eagerly pre-cached here.

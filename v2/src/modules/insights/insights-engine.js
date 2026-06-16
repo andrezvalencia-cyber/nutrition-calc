@@ -3,7 +3,7 @@
 // global, depends on data.js globals (NUTRIENT_KEYS, OBJECTIVES, getStatus,
 // MACRO_KEYS, VITAMIN_KEYS, MINERAL_KEYS, emptyNutrients, todayStr).
 //
-// Public API: window.Modules.Insights.{ buildDays, aggregate, buildHeatmap }
+// Public API: Modules.Insights.{ buildDays, aggregate, buildHeatmap, heatmapColor }
 (function (global) {
   function buildDays(state, runningTotals, gapsClosed) {
     var hist = (state.dayHistory || []).map(function (d) {
@@ -70,7 +70,24 @@
     };
   }
 
-  function buildHeatmap(sliced, isDark, heatmapColor) {
+  function heatmapColor(pct, isDark, isMaxType) {
+    if (pct === null || pct === undefined) {
+      return isDark ? "hsl(0,0%,18%)" : "hsl(0,0%,92%)";
+    }
+    var effective = isMaxType ? Math.max(0, 120 - pct) : Math.min(pct, 120);
+    var hue = (Math.max(0, Math.min(effective, 120)) / 120) * 130;
+    if (isDark) {
+      var sat = effective === 0 && !isMaxType ? 0 : 60;
+      var light = effective === 0 && !isMaxType ? 18 : 25 + (effective / 120) * 10;
+      return "hsl(" + hue + "," + sat + "%," + light + "%)";
+    }
+    var sat2 = effective === 0 && !isMaxType ? 0 : 50;
+    var light2 = effective === 0 && !isMaxType ? 92 : 82 - (effective / 120) * 18;
+    return "hsl(" + hue + "," + sat2 + "%," + light2 + "%)";
+  }
+
+  function buildHeatmap(sliced, isDark, colorFn) {
+    colorFn = colorFn || heatmapColor;
     var data = {};
     var groups = [
       { label: "Macros", keys: MACRO_KEYS },
@@ -88,7 +105,7 @@
             value: val,
             date: d.date,
             closed: s.closed,
-            color: heatmapColor(s.pct, isDark, isMaxType),
+            color: colorFn(s.pct, isDark, isMaxType),
           };
         });
       });
@@ -96,10 +113,17 @@
     return data;
   }
 
-  global.Modules = global.Modules || {};
-  global.Modules.Insights = {
+  var api = {
     buildDays: buildDays,
     aggregate: aggregate,
     buildHeatmap: buildHeatmap,
+    heatmapColor: heatmapColor,
   };
-})(window);
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  } else {
+    global.Modules = global.Modules || {};
+    global.Modules.Insights = api;
+  }
+})(typeof window !== "undefined" ? window : globalThis);
