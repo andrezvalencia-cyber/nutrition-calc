@@ -95,6 +95,20 @@
         [runningTotals]
       );
 
+      // First-run onboarding: seed example templates once, then mark onboarded.
+      // Always sets onboarded=true (even when seeding yields []) so the rejection
+      // budget can never spin this into a re-seed loop. Guarded inside the updater
+      // so React's double-invoke / reloads never double-seed.
+      useEffect(() => {
+        setState((s) => {
+          if (s.onboarded) return s;
+          const seeded = (s.templates && s.templates.length)
+            ? s.templates
+            : Modules.Templates.seedExamples(EXAMPLE_TEMPLATE_SPECS, allRecipes);
+          return { ...s, templates: seeded, onboarded: true };
+        });
+      }, []);
+
       const value = useMemo(() => ({
         state, setState, runningTotals, gapsClosed, allRecipes, apiKey, setApiKey,
       }), [state, setState, runningTotals, gapsClosed, allRecipes, apiKey, setApiKey]);
@@ -972,6 +986,75 @@
         setCheckedSupps((prev) => ({ ...prev, [id]: !prev[id] }));
       };
 
+      // ── Templates: one-tap re-log + create-from-current-selection ──────────
+      const templates = state.templates || [];
+      const [creatingName, setCreatingName] = useState(null); // null = closed; string = input value
+      const canCreate = selectedRecipes.length > 0 || Object.values(checkedSupps).some(Boolean);
+
+      // Low-friction fast path: resolve a template and log all its entries.
+      // Degraded (unresolvable) templates are no-ops — the chip is disabled too.
+      const logTemplate = (tpl) => {
+        const res = Modules.Templates.resolveTemplate(tpl, allRecipes);
+        if (!res.ok || res.entries.length === 0) return;
+        setState((s) => Modules.Log.addEntries(s, res.entries));
+        if (isSyncEnabled(auth, state)) {
+          res.entries.forEach((e) => {
+            window.WriteBehind.enqueue({
+              table: "day_entries", op: "upsert",
+              payload: buildEntryRow(e, auth.user.id, state.currentDate),
+              rollback: () => setState((s) => Modules.Log.removeEntry(s, e.id)),
+            });
+          });
+        }
+        const n = res.entries.length;
+        showToast({ text: `${tpl.emoji} ${tpl.name} · ${n} item${n > 1 ? "s" : ""}` });
+        handleClose();
+      };
+
+      // Snapshot the current meal + supplement selection into template refs.
+      const buildCurrentRefs = () => {
+        const refs = [];
+        const isSingle = selectedRecipes.length === 1;
+        selectedRecipes.forEach((rid) => {
+          const recipe = allRecipes[rid];
+          if (!recipe) return;
+          const states = isSingle
+            ? ingredientStates.map((s) => ({ ...s }))
+            : recipe.ingredients.map((ing) => ({
+                id: ing.id,
+                qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
+                swapGroup: ing.swapGroup,
+              }));
+          refs.push({ recipeId: rid, ingredientStates: states });
+        });
+        Object.entries(checkedSupps).forEach(([sid, on]) => {
+          if (!on) return;
+          const recipe = allRecipes[sid];
+          if (!recipe) return;
+          refs.push({
+            recipeId: sid,
+            ingredientStates: recipe.ingredients.map((ing) => ({
+              id: ing.id,
+              qty: Modules.Catalog.getIngredient(ing.id)?.defaultQty || 1,
+              swapGroup: ing.swapGroup || null,
+            })),
+          });
+        });
+        return refs;
+      };
+
+      const saveTemplate = () => {
+        const refs = buildCurrentRefs();
+        if (refs.length === 0) return;
+        const firstRecipe = allRecipes[refs[0].recipeId];
+        const emoji = (firstRecipe && firstRecipe.emoji) || "\u{1F37D}";
+        // Name comes from the user-controlled input below — never hardcoded.
+        const tpl = Modules.Templates.buildTemplate(creatingName || "My Template", emoji, refs);
+        setState((s) => Modules.Templates.addTemplate(s, tpl));
+        showToast({ text: `Saved template: ${tpl.name}` });
+        setCreatingName(null);
+      };
+
       return (
         <div className="fixed inset-0 z-50 animate-fade-in">
           <div className="absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm" onClick={handleClose} />
@@ -1005,6 +1088,39 @@
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 pb-24 space-y-4">
+              {/* Templates — one-tap re-log, prioritized above individual entry.
+                  Unresolvable templates render degraded (disabled) instead of crashing. */}
+              {templates.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="font-headline text-base font-semibold">Your Templates</h3>
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                    {templates.map((tpl) => {
+                      const res = Modules.Templates.resolveTemplate(tpl, allRecipes);
+                      const degraded = !res.ok;
+                      return (
+                        <button
+                          key={tpl.id}
+                          data-testid="template-chip"
+                          data-template-id={tpl.id}
+                          data-degraded={degraded ? "true" : "false"}
+                          disabled={degraded}
+                          onClick={() => logTemplate(tpl)}
+                          title={degraded ? "Some items unavailable" : `Log ${tpl.name}`}
+                          className={`shrink-0 px-4 py-2 rounded-full text-sm font-label border flex items-center gap-1.5 transition-all ${
+                            degraded
+                              ? "border-on-surface/10 bg-on-surface/5 text-on-surface-variant/40 opacity-50 cursor-not-allowed"
+                              : "border-primary/40 bg-primary/10 text-white hover:bg-primary/20"
+                          }`}
+                        >
+                          {degraded && <Icon name="error" size={16} className="text-orange-400" />}
+                          <span>{tpl.emoji} {tpl.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {tab === "meals" && (
                 <>
                   {/* Frequent Meals */}
@@ -1110,6 +1226,36 @@
                   {/* Closing Gaps */}
                   <ClosingGaps suppRecipes={suppRecipes} checkedSupps={checkedSupps} onToggle={toggleSupp} />
                 </div>
+              )}
+
+              {/* Create Template from the current meal/supplement selection.
+                  Name is supplied at runtime via a controlled input. */}
+              {canCreate && (
+                creatingName === null ? (
+                  <button
+                    onClick={() => setCreatingName("")}
+                    data-testid="create-template"
+                    className="w-full rounded-full py-2.5 text-sm font-label border border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20 transition flex items-center justify-center gap-1.5"
+                  >
+                    <Icon name="bookmark_add" size={18} /> Create Template
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      autoFocus
+                      maxLength={Modules.Templates.NAME_MAX}
+                      value={creatingName}
+                      onChange={(e) => setCreatingName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && saveTemplate()}
+                      placeholder="Template name"
+                      data-testid="template-name-input"
+                      className="flex-1 bg-on-surface/5 rounded-full px-4 py-2.5 text-sm placeholder:text-on-surface-variant/40"
+                    />
+                    <button onClick={saveTemplate} data-testid="template-save" className="px-4 py-2.5 rounded-full pill-active text-white text-sm font-semibold">Save</button>
+                    <button onClick={() => setCreatingName(null)} className="p-2 text-on-surface-variant" aria-label="Cancel"><Icon name="close" size={18} /></button>
+                  </div>
+                )
               )}
             </div>
 
