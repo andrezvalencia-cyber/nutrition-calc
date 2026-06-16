@@ -219,18 +219,7 @@ function useAuth() {
 // No deletes or overwrites in this phase — Phase 5 introduces LWW.
 // ============================================================
 function applyHydration(setState, days, entries) {
-  setState(s => {
-    const localDates = new Set((s.dayHistory || []).map(d => d.date));
-    const newHistoryRows = (days || []).filter(d => !localDates.has(d.date));
-    const mergedHistory = (s.dayHistory || []).concat(newHistoryRows).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
-    const localIds = new Set((s.dayLog || []).map(e => e.id));
-    const newEntries = (entries || []).filter(e => !localIds.has(e.id));
-    const mergedLog = (s.dayLog || []).concat(newEntries);
-    return Object.assign({}, s, {
-      dayHistory: mergedHistory,
-      dayLog: mergedLog
-    });
-  });
+  setState(s => Modules.SyncMap.mergeHydration(s, days, entries));
 }
 function CloudSync() {
   const {
@@ -290,42 +279,17 @@ function CloudSync() {
 }
 
 // ============================================================
-// Phase 5 — WriteBehind helpers
+// Phase 5 — WriteBehind helpers (delegated to Modules.SyncMap)
 // ============================================================
 
-// Build a day_entries row for Supabase.
 function buildEntryRow(entry, userId, dayDate) {
-  return {
-    idempotency_key: entry.id,
-    user_id: userId,
-    day_date: dayDate,
-    recipe_id: entry.recipeId || null,
-    name: entry.name,
-    emoji: entry.emoji || "",
-    nutrients: entry.nutrients,
-    ingredient_states: entry.ingredientStates || [],
-    logged_at: new Date(entry.timestamp || Date.now()).toISOString()
-  };
+  return Modules.SyncMap.buildEntryRow(entry, userId, dayDate);
 }
-
-// Build a days row for Supabase.
 function buildDayRow(histEntry, carryover, userId) {
-  return {
-    user_id: userId,
-    day_date: histEntry.date,
-    gaps_closed: histEntry.gapsClosed || 0,
-    energy: histEntry.energy || null,
-    digestion: histEntry.digestion || null,
-    notes: histEntry.notes || "",
-    totals: histEntry.totals || {},
-    carryover: carryover || {},
-    updated_at: new Date().toISOString()
-  };
+  return Modules.SyncMap.buildDayRow(histEntry, carryover, userId);
 }
-
-// Guard: only enqueue if cloud sync is on, user is signed in, and WriteBehind is loaded.
 function isSyncEnabled(auth, state) {
-  return !!(window.WriteBehind && state.cloudSync && auth && auth.status === "signed_in" && auth.user);
+  return Modules.SyncMap.isSyncEnabled(auth, state, !!window.WriteBehind);
 }
 
 // ============================================================
@@ -1625,22 +1589,7 @@ function NutrientGroup({
 // InsightsScreen — Weekly Report Card + Nutrient Heatmap
 // ============================================================
 
-function heatmapColor(pct, isDark, isMaxType) {
-  if (pct === null || pct === undefined) {
-    return isDark ? "hsl(0,0%,18%)" : "hsl(0,0%,92%)";
-  }
-  // For "maximum" type (sat_fat): low = good (green), high = bad (red)
-  var effective = isMaxType ? Math.max(0, 120 - pct) : Math.min(pct, 120);
-  var hue = Math.max(0, Math.min(effective, 120)) / 120 * 130;
-  if (isDark) {
-    var sat = effective === 0 && !isMaxType ? 0 : 60;
-    var light = effective === 0 && !isMaxType ? 18 : 25 + effective / 120 * 10;
-    return "hsl(" + hue + "," + sat + "%," + light + "%)";
-  }
-  var sat = effective === 0 && !isMaxType ? 0 : 50;
-  var light = effective === 0 && !isMaxType ? 92 : 82 - effective / 120 * 18;
-  return "hsl(" + hue + "," + sat + "%," + light + "%)";
-}
+var heatmapColor = Modules.Insights.heatmapColor;
 function InsightsScreen() {
   const {
     state,
@@ -1662,7 +1611,7 @@ function InsightsScreen() {
   const stats = useMemo(() => Modules.Insights.aggregate(sliced), [sliced]);
 
   // Heatmap data: nutrientKey -> array of { pct, value, date }
-  const heatmapData = useMemo(() => Modules.Insights.buildHeatmap(sliced, isDark, heatmapColor), [sliced, isDark]);
+  const heatmapData = useMemo(() => Modules.Insights.buildHeatmap(sliced, isDark), [sliced, isDark]);
   const formatShortDate = dateStr => {
     const d = new Date(dateStr + "T12:00:00");
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
