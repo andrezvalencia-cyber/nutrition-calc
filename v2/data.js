@@ -616,9 +616,19 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 // kept here as a data constant.
 var MAX_QUICK_TEXT = 500;
 
+// Example templates seeded on first run (see Modules.Templates.seedExamples).
+// recipeIds reference keys in RECIPES / SUPPLEMENT_RECIPES above; any id missing
+// at seed time is skipped (and >3 consecutive misses trip the rejection budget).
+var EXAMPLE_TEMPLATE_SPECS = [
+  { name: "Standard Breakfast", emoji: "\u{1F963}", recipeIds: ["morning_shake"] },
+  { name: "Morning Vitality",   emoji: "\u{1F48A}", recipeIds: ["supp_omega3", "supp_b12", "supp_vitd"] },
+];
+
 var DEFAULT_STATE = {
   currentDate: todayStr(),
   dayLog: [],
+  templates: [],
+  onboarded: false,
   fatSolubleCarryover: { b12:0, vit_e:0, vit_d:0 },
   carryoverDaysRemaining: { b12:0, vit_e:0 },
   dayHistory: [],

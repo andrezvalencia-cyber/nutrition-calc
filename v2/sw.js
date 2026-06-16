@@ -31,6 +31,7 @@ var PRECACHE_URLS = [
   "/src/store/sync-leader.js",
   "/src/modules/catalog/ingredients.js",
   "/src/modules/recipes/recipes.js",
+  "/src/modules/templates/templates.js",
   "/src/modules/log/day-log.js",
   "/src/modules/log/gap-engine.js",
   "/src/modules/carryover/carryover-engine.js",

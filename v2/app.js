@@ -118,6 +118,22 @@ function NutritionProvider({
   const allRecipes = useMemo(() => Modules.Recipes.getAllRecipes(), []);
   const runningTotals = useMemo(() => Modules.GapEngine.computeRunningTotals(state), [state.dayLog, state.fatSolubleCarryover]);
   const gapsClosed = useMemo(() => Modules.GapEngine.computeGapsClosed(runningTotals), [runningTotals]);
+
+  // First-run onboarding: seed example templates once, then mark onboarded.
+  // Always sets onboarded=true (even when seeding yields []) so the rejection
+  // budget can never spin this into a re-seed loop. Guarded inside the updater
+  // so React's double-invoke / reloads never double-seed.
+  useEffect(() => {
+    setState(s => {
+      if (s.onboarded) return s;
+      const seeded = s.templates && s.templates.length ? s.templates : Modules.Templates.seedExamples(EXAMPLE_TEMPLATE_SPECS, allRecipes);
+      return {
+        ...s,
+        templates: seeded,
+        onboarded: true
+      };
+    });
+  }, []);
   const value = useMemo(() => ({
     state,
     setState,
@@ -1113,6 +1129,88 @@ function LogDaySheet({
       [id]: !prev[id]
     }));
   };
+
+  // ── Templates: one-tap re-log + create-from-current-selection ──────────
+  const templates = state.templates || [];
+  const [creatingName, setCreatingName] = useState(null); // null = closed; string = input value
+  const canCreate = selectedRecipes.length > 0 || Object.values(checkedSupps).some(Boolean);
+
+  // Low-friction fast path: resolve a template and log all its entries.
+  // Degraded (unresolvable) templates are no-ops — the chip is disabled too.
+  const logTemplate = tpl => {
+    const res = Modules.Templates.resolveTemplate(tpl, allRecipes);
+    if (!res.ok || res.entries.length === 0) return;
+    setState(s => Modules.Log.addEntries(s, res.entries));
+    if (isSyncEnabled(auth, state)) {
+      res.entries.forEach(e => {
+        window.WriteBehind.enqueue({
+          table: "day_entries",
+          op: "upsert",
+          payload: buildEntryRow(e, auth.user.id, state.currentDate),
+          rollback: () => setState(s => Modules.Log.removeEntry(s, e.id))
+        });
+      });
+    }
+    const n = res.entries.length;
+    showToast({
+      text: `${tpl.emoji} ${tpl.name} · ${n} item${n > 1 ? "s" : ""}`
+    });
+    handleClose();
+  };
+
+  // Snapshot the current meal + supplement selection into template refs.
+  const buildCurrentRefs = () => {
+    const refs = [];
+    const isSingle = selectedRecipes.length === 1;
+    selectedRecipes.forEach(rid => {
+      const recipe = allRecipes[rid];
+      if (!recipe) return;
+      const states = isSingle ? ingredientStates.map(s => ({
+        ...s
+      })) : recipe.ingredients.map(ing => {
+        var _Modules$Catalog$getI5;
+        return {
+          id: ing.id,
+          qty: ((_Modules$Catalog$getI5 = Modules.Catalog.getIngredient(ing.id)) === null || _Modules$Catalog$getI5 === void 0 ? void 0 : _Modules$Catalog$getI5.defaultQty) || 1,
+          swapGroup: ing.swapGroup
+        };
+      });
+      refs.push({
+        recipeId: rid,
+        ingredientStates: states
+      });
+    });
+    Object.entries(checkedSupps).forEach(([sid, on]) => {
+      if (!on) return;
+      const recipe = allRecipes[sid];
+      if (!recipe) return;
+      refs.push({
+        recipeId: sid,
+        ingredientStates: recipe.ingredients.map(ing => {
+          var _Modules$Catalog$getI6;
+          return {
+            id: ing.id,
+            qty: ((_Modules$Catalog$getI6 = Modules.Catalog.getIngredient(ing.id)) === null || _Modules$Catalog$getI6 === void 0 ? void 0 : _Modules$Catalog$getI6.defaultQty) || 1,
+            swapGroup: ing.swapGroup || null
+          };
+        })
+      });
+    });
+    return refs;
+  };
+  const saveTemplate = () => {
+    const refs = buildCurrentRefs();
+    if (refs.length === 0) return;
+    const firstRecipe = allRecipes[refs[0].recipeId];
+    const emoji = firstRecipe && firstRecipe.emoji || "\u{1F37D}";
+    // Name comes from the user-controlled input below — never hardcoded.
+    const tpl = Modules.Templates.buildTemplate(creatingName || "My Template", emoji, refs);
+    setState(s => Modules.Templates.addTemplate(s, tpl));
+    showToast({
+      text: `Saved template: ${tpl.name}`
+    });
+    setCreatingName(null);
+  };
   return /*#__PURE__*/React.createElement("div", {
     className: "fixed inset-0 z-50 animate-fade-in"
   }, /*#__PURE__*/React.createElement("div", {
@@ -1144,7 +1242,30 @@ function LogDaySheet({
     className: `flex-1 py-2 rounded-full text-sm font-semibold font-label transition-all ${tab === t ? "pill-active text-white" : "text-on-surface-variant"}`
   }, t === "meals" ? "Meals" : "Supplements")))), /*#__PURE__*/React.createElement("div", {
     className: "flex-1 overflow-y-auto px-5 pb-24 space-y-4"
-  }, tab === "meals" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, templates.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-headline text-base font-semibold"
+  }, "Your Templates"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"
+  }, templates.map(tpl => {
+    const res = Modules.Templates.resolveTemplate(tpl, allRecipes);
+    const degraded = !res.ok;
+    return /*#__PURE__*/React.createElement("button", {
+      key: tpl.id,
+      "data-testid": "template-chip",
+      "data-template-id": tpl.id,
+      "data-degraded": degraded ? "true" : "false",
+      disabled: degraded,
+      onClick: () => logTemplate(tpl),
+      title: degraded ? "Some items unavailable" : `Log ${tpl.name}`,
+      className: `shrink-0 px-4 py-2 rounded-full text-sm font-label border flex items-center gap-1.5 transition-all ${degraded ? "border-on-surface/10 bg-on-surface/5 text-on-surface-variant/40 opacity-50 cursor-not-allowed" : "border-primary/40 bg-primary/10 text-white hover:bg-primary/20"}`
+    }, degraded && /*#__PURE__*/React.createElement(Icon, {
+      name: "error",
+      size: 16,
+      className: "text-orange-400"
+    }), /*#__PURE__*/React.createElement("span", null, tpl.emoji, " ", tpl.name));
+  }))), tab === "meals" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
   }, mealRecipes.map(([id, r]) => /*#__PURE__*/React.createElement("button", {
     key: id,
@@ -1227,7 +1348,37 @@ function LogDaySheet({
     suppRecipes: suppRecipes,
     checkedSupps: checkedSupps,
     onToggle: toggleSupp
-  }))), /*#__PURE__*/React.createElement("div", {
+  })), canCreate && (creatingName === null ? /*#__PURE__*/React.createElement("button", {
+    onClick: () => setCreatingName(""),
+    "data-testid": "create-template",
+    className: "w-full rounded-full py-2.5 text-sm font-label border border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20 transition flex items-center justify-center gap-1.5"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "bookmark_add",
+    size: 18
+  }), " Create Template") : /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "text",
+    autoFocus: true,
+    maxLength: Modules.Templates.NAME_MAX,
+    value: creatingName,
+    onChange: e => setCreatingName(e.target.value),
+    onKeyDown: e => e.key === "Enter" && saveTemplate(),
+    placeholder: "Template name",
+    "data-testid": "template-name-input",
+    className: "flex-1 bg-on-surface/5 rounded-full px-4 py-2.5 text-sm placeholder:text-on-surface-variant/40"
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: saveTemplate,
+    "data-testid": "template-save",
+    className: "px-4 py-2.5 rounded-full pill-active text-white text-sm font-semibold"
+  }, "Save"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setCreatingName(null),
+    className: "p-2 text-on-surface-variant",
+    "aria-label": "Cancel"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "close",
+    size: 18
+  }))))), /*#__PURE__*/React.createElement("div", {
     className: "absolute bottom-0 left-0 right-0 p-5 sheet-bottom-fade"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: handleConfirmMeal,
@@ -1285,10 +1436,10 @@ function ClosingGaps({
     for (const [id, r] of suppRecipes) {
       if (checkedSupps[id]) continue;
       const rStates = r.ingredients.map(i => {
-        var _Modules$Catalog$getI5;
+        var _Modules$Catalog$getI7;
         return {
           id: i.id,
-          qty: ((_Modules$Catalog$getI5 = Modules.Catalog.getIngredient(i.id)) === null || _Modules$Catalog$getI5 === void 0 ? void 0 : _Modules$Catalog$getI5.defaultQty) || 1
+          qty: ((_Modules$Catalog$getI7 = Modules.Catalog.getIngredient(i.id)) === null || _Modules$Catalog$getI7 === void 0 ? void 0 : _Modules$Catalog$getI7.defaultQty) || 1
         };
       });
       const rTotals = Modules.Recipes.computeMealNutrients(r, rStates);
