@@ -12,7 +12,8 @@
     "test": "playwright test",
     "test:headless": "playwright test --reporter=list",
     "perf": "node tests/perf-benchmark.js",
-    "test:unit": "node /Users/andyv/Projects/nutrition-calculator/v2/tests/write-behind.test.js"
+    "test:unit": "node /Users/andyv/Projects/nutrition-calculator/v2/tests/write-behind.test.js",
+    "bench": "node tests/benchmarks/performance.js"
   },
   "keywords": [],
   "author": "",
