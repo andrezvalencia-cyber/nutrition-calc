@@ -510,6 +510,72 @@
     }
 
     // ============================================================
+    // CameraScanModal
+    // ============================================================
+    function CameraScanModal({ onDecode, onClose }) {
+      const [denied, setDenied] = useState(false);
+      const [starting, setStarting] = useState(true);
+      const viewportRef = useRef(null);
+
+      useEffect(() => {
+        let cancelled = false;
+        const Scanner = window.Modules && window.Modules.Scanner;
+        if (!Scanner) { setDenied(true); setStarting(false); return; }
+
+        Scanner.requestCamera()
+          .then(() => {
+            if (cancelled) return;
+            return Scanner.start("scanner-viewport", {
+              onDecode: (text) => {
+                if (!cancelled) onDecode(text);
+              },
+            });
+          })
+          .then(() => { if (!cancelled) setStarting(false); })
+          .catch(() => { if (!cancelled) { setDenied(true); setStarting(false); } });
+
+        return () => {
+          cancelled = true;
+          if (Scanner) Scanner.stop();
+        };
+      }, []);
+
+      return (
+        <div className="fixed inset-0 z-50 animate-fade-in">
+          <div className="absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm" onClick={onClose} />
+          <div className="absolute bottom-0 left-0 right-0 bg-surface-container dark:bg-[#0a0a0a] modal-sheet max-h-[85vh] flex flex-col animate-slide-up">
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-on-surface/20" />
+            </div>
+            <div className="flex items-center justify-between px-5 pb-3">
+              <h2 className="font-headline text-lg font-bold">Scan Barcode</h2>
+              <button onClick={onClose} className="p-1 hover:bg-on-surface/10 rounded-full transition">
+                <Icon name="close" size={22} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 pb-8">
+              {denied ? (
+                <div data-testid="scanner-denied" className="text-center py-8 space-y-3">
+                  <Icon name="videocam_off" size={48} className="text-on-surface-variant mx-auto" />
+                  <p className="text-sm text-on-surface-variant">Camera access denied or unavailable.</p>
+                  <button
+                    onClick={() => { setDenied(false); setStarting(true); window.Modules.Scanner.requestCamera().then(() => window.Modules.Scanner.start("scanner-viewport", { onDecode })).then(() => setStarting(false)).catch(() => setDenied(true)); }}
+                    className="text-sm text-blue-400 hover:underline"
+                  >Try again</button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {starting && <p className="text-sm text-on-surface-variant text-center">Starting camera…</p>}
+                  <div id="scanner-viewport" className="w-full rounded-xl overflow-hidden" style={{ minHeight: 280 }} />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ============================================================
     // HomeScreen
     // ============================================================
     function HomeScreen({ onOpenLog, onTabChange }) {
@@ -518,6 +584,7 @@
       const auth = useAuth();
       const [quickText, setQuickText] = useState("");
       const [aiLoading, setAiLoading] = useState(false);
+      const [showScanner, setShowScanner] = useState(false);
       const gaps = useMemo(() => getOpenGaps(runningTotals), [runningTotals]);
 
       const handleAIEstimate = async () => {
@@ -646,11 +713,27 @@
                   <Icon name={aiLoading ? "hourglass_empty" : "auto_awesome"} size={18} className="text-white" />
                 </button>
               )}
+              {window.Modules && window.Modules.Scanner && window.Modules.Scanner.isSupported() && (
+                <button
+                  data-testid="scan-camera"
+                  onClick={() => setShowScanner(true)}
+                  className="p-1.5 rounded-full hover:bg-on-surface/10 transition"
+                >
+                  <Icon name="barcode_scanner" size={22} className="text-blue-400" />
+                </button>
+              )}
               <button onClick={onOpenLog} className="p-1.5 rounded-full hover:bg-on-surface/10 transition">
                 <Icon name="add_circle" size={22} className="text-blue-400" fill />
               </button>
             </div>
           </div>
+
+          {showScanner && (
+            <CameraScanModal
+              onDecode={(text) => { setQuickText(text.slice(0, MAX_QUICK_TEXT)); setShowScanner(false); }}
+              onClose={() => setShowScanner(false)}
+            />
+          )}
 
           {/* Today's Meals */}
           {(state.dayLog.length > 0 || aiLoading) && (
