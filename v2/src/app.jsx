@@ -310,7 +310,7 @@
       };
 
       return (
-        <div className={`fixed bottom-24 left-4 right-4 z-50 flex justify-center ${toast.exiting ? "toast-exit" : "toast-enter"}`}>
+        <div className={`fixed bottom-24 left-4 right-4 z-[60] flex justify-center ${toast.exiting ? "toast-exit" : "toast-enter"}`}>
           <div className="liquid-glass rounded-2xl px-5 py-3 flex items-center gap-3 max-w-sm w-full">
             <span className="text-sm flex-1 truncate">{toast.text}</span>
             {toast.macros && (
@@ -339,7 +339,7 @@
         { id: "settings", icon: "settings", label: "Settings" },
       ];
       return (
-        <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40">
+        <nav data-testid="bottom-nav" className="fixed left-1/2 -translate-x-1/2 z-50" style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
           <div className="liquid-glass rounded-full px-2 py-2 flex items-center gap-1">
             {tabs.map((tab) => {
               const active = activeTab === tab.id;
@@ -541,7 +541,7 @@
       }, []);
 
       return (
-        <div className="fixed inset-0 z-50 animate-fade-in">
+        <div className="fixed inset-0 z-[60] animate-fade-in">
           <div className="absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm" onClick={onClose} />
           <div className="absolute bottom-0 left-0 right-0 bg-surface-container dark:bg-[#0a0a0a] modal-sheet max-h-[85vh] flex flex-col animate-slide-up">
             <div className="flex justify-center pt-3 pb-1">
@@ -825,7 +825,7 @@
       };
 
       return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 animate-fade-in" onClick={onClose}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 animate-fade-in" onClick={onClose}>
           <div className="absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-sm" />
           <div className="glass-sheet squircle p-6 w-full max-w-sm relative z-10 space-y-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
@@ -1103,7 +1103,7 @@
       };
 
       return (
-        <div className="fixed inset-0 z-50 animate-fade-in">
+        <div className="fixed inset-0 z-[60] animate-fade-in">
           <div className="absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm" onClick={handleClose} />
           <div className={`absolute bottom-0 left-0 right-0 bg-surface-container dark:bg-[#0a0a0a] modal-sheet max-h-[85vh] flex flex-col ${closing ? "animate-slide-down" : "animate-slide-up"}`}>
             {/* Handle */}
@@ -2033,7 +2033,7 @@
 
           {/* Cloud Sync Sign-In Modal */}
           {showSignIn && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 animate-fade-in" data-testid="cloud-signin-modal">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 animate-fade-in" data-testid="cloud-signin-modal">
               <div className="absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-sm" onClick={() => setShowSignIn(false)} />
               <form onSubmit={handleSignInSubmit} className="glass-sheet squircle p-6 w-full max-w-xs relative z-10 space-y-4" onClick={(e) => e.stopPropagation()}>
                 <h3 className="font-headline text-lg font-bold">Sign in to Cloud Sync</h3>
@@ -2085,7 +2085,7 @@
 
           {/* Clear Confirm Modal */}
           {showClearConfirm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 animate-fade-in">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 animate-fade-in">
               <div className="absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-sm" onClick={() => setShowClearConfirm(false)} />
               <div className="glass-sheet squircle p-6 w-full max-w-xs relative z-10 space-y-4" onClick={(e) => e.stopPropagation()}>
                 <h3 className="font-headline text-lg font-bold">Clear All Data?</h3>
@@ -2233,7 +2233,7 @@
       var isLast = step === steps.length - 1;
 
       return (
-        <div className="fixed inset-0 z-50 animate-fade-in">
+        <div className="fixed inset-0 z-[60] animate-fade-in">
           <div className="absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm" />
           <div className={`absolute bottom-0 left-0 right-0 bg-surface-container dark:bg-[#0a0a0a] modal-sheet max-h-[85vh] flex flex-col ${closing ? "animate-slide-down" : "animate-slide-up"}`}>
             <div className="flex justify-center pt-3 pb-1">

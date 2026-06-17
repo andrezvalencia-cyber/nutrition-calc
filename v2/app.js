@@ -363,7 +363,7 @@ function Toast() {
     dismissToast();
   };
   return /*#__PURE__*/React.createElement("div", {
-    className: `fixed bottom-24 left-4 right-4 z-50 flex justify-center ${toast.exiting ? "toast-exit" : "toast-enter"}`
+    className: `fixed bottom-24 left-4 right-4 z-[60] flex justify-center ${toast.exiting ? "toast-exit" : "toast-enter"}`
   }, /*#__PURE__*/React.createElement("div", {
     className: "liquid-glass rounded-2xl px-5 py-3 flex items-center gap-3 max-w-sm w-full"
   }, /*#__PURE__*/React.createElement("span", {
@@ -401,7 +401,11 @@ function BottomNav({
     label: "Settings"
   }];
   return /*#__PURE__*/React.createElement("nav", {
-    className: "fixed bottom-4 left-1/2 -translate-x-1/2 z-40"
+    "data-testid": "bottom-nav",
+    className: "fixed left-1/2 -translate-x-1/2 z-50",
+    style: {
+      bottom: 'calc(1rem + env(safe-area-inset-bottom))'
+    }
   }, /*#__PURE__*/React.createElement("div", {
     className: "liquid-glass rounded-full px-2 py-2 flex items-center gap-1"
   }, tabs.map(tab => {
@@ -661,7 +665,7 @@ function CameraScanModal({
     };
   }, []);
   return /*#__PURE__*/React.createElement("div", {
-    className: "fixed inset-0 z-50 animate-fade-in"
+    className: "fixed inset-0 z-[60] animate-fade-in"
   }, /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm",
     onClick: onClose
@@ -991,7 +995,7 @@ function LogDayModal({
     onClose();
   };
   return /*#__PURE__*/React.createElement("div", {
-    className: "fixed inset-0 z-50 flex items-center justify-center p-6 animate-fade-in",
+    className: "fixed inset-0 z-[60] flex items-center justify-center p-6 animate-fade-in",
     onClick: onClose
   }, /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-sm"
@@ -1283,7 +1287,7 @@ function LogDaySheet({
     setCreatingName(null);
   };
   return /*#__PURE__*/React.createElement("div", {
-    className: "fixed inset-0 z-50 animate-fade-in"
+    className: "fixed inset-0 z-[60] animate-fade-in"
   }, /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm",
     onClick: handleClose
@@ -2184,7 +2188,7 @@ function SettingsScreen() {
   }, "Clear All Data"), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-on-surface-variant"
   }, "Remove all stored data"))))), showSignIn && /*#__PURE__*/React.createElement("div", {
-    className: "fixed inset-0 z-50 flex items-center justify-center p-6 animate-fade-in",
+    className: "fixed inset-0 z-[60] flex items-center justify-center p-6 animate-fade-in",
     "data-testid": "cloud-signin-modal"
   }, /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-sm",
@@ -2235,7 +2239,7 @@ function SettingsScreen() {
     disabled: !auth || !auth.configured || signInBusy,
     className: "flex-1 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 transition disabled:opacity-50"
   }, signInBusy ? "Signing in…" : "Sign In")))), showClearConfirm && /*#__PURE__*/React.createElement("div", {
-    className: "fixed inset-0 z-50 flex items-center justify-center p-6 animate-fade-in"
+    className: "fixed inset-0 z-[60] flex items-center justify-center p-6 animate-fade-in"
   }, /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-sm",
     onClick: () => setShowClearConfirm(false)
@@ -2380,7 +2384,7 @@ function OnboardingSheet({
   var current = steps[step];
   var isLast = step === steps.length - 1;
   return /*#__PURE__*/React.createElement("div", {
-    className: "fixed inset-0 z-50 animate-fade-in"
+    className: "fixed inset-0 z-[60] animate-fade-in"
   }, /*#__PURE__*/React.createElement("div", {
     className: "absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm"
   }), /*#__PURE__*/React.createElement("div", {
