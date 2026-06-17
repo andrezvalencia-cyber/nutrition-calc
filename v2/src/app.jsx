@@ -1406,9 +1406,10 @@
     // DashboardScreen
     // ============================================================
     function DashboardScreen() {
-      const { runningTotals } = useNutrition();
+      const { runningTotals, state } = useNutrition();
       const cals = computeCalories(runningTotals);
-      const calPct = Math.min(100, Math.round((cals / CALORIE_TARGET) * 100));
+      const calTarget = resolveCalorieTarget(state.onboardingProfile);
+      const calPct = Math.min(100, Math.round((cals / calTarget) * 100));
 
       return (
         <div className="pt-20 pb-28 px-4 space-y-6">
@@ -1423,7 +1424,7 @@
             <div className="col-span-2 liquid-glass p-5 rounded-[24px]">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-on-surface-variant font-label">Calories</span>
-                <span className="text-sm text-on-surface-variant">{cals} / {CALORIE_TARGET} kcal</span>
+                <span className="text-sm text-on-surface-variant">{cals} / {calTarget} kcal</span>
               </div>
               <div className="w-full h-3 rounded-full bg-on-surface/5 overflow-hidden">
                 <div
@@ -2107,6 +2108,181 @@
     }
 
     // ============================================================
+    // Fallback telemetry (silent, DI wiring for Modules.Fallbacks)
+    // ============================================================
+    const _fallbackDedupeSet = new Set();
+    function onFallbackTriggered(ctx) {
+      var dedupeKey = ctx.key + ":" + ctx.reason;
+      if (_fallbackDedupeSet.has(dedupeKey)) return;
+      _fallbackDedupeSet.add(dedupeKey);
+      if (typeof window !== "undefined" && window.__tracer) {
+        window.__tracer
+          .startSpan("nutrient.fallback", ctx)
+          .end(ctx.reason === "FALLBACK_CONFIG_ERROR" ? "error" : "ok");
+      }
+    }
+
+    function resolveCalorieTarget(profile) {
+      return Modules.Fallbacks.resolveTarget("calories", profile, {
+        defaults: FALLBACK_DEFAULTS,
+        onFallbackTriggered: onFallbackTriggered,
+      });
+    }
+
+    // ============================================================
+    // OnboardingSheet (first-login only)
+    // ============================================================
+    function OnboardingSheet({ onClose }) {
+      const { setState } = useNutrition();
+      const [step, setStep] = useState(0);
+      const [answers, setAnswers] = useState({ calories: 2400, goal: "maintain", diet: "omnivore", protein: "standard" });
+      const [closing, setClosing] = useState(false);
+
+      const handleClose = () => {
+        setClosing(true);
+        setTimeout(onClose, 250);
+      };
+
+      const handleSkip = () => {
+        setState((s) => ({ ...s, onboardingProfile: { skipped: true, completed: false } }));
+        handleClose();
+      };
+
+      const handleFinish = () => {
+        var profile = Modules.Fallbacks.buildProfile(answers);
+        setState((s) => ({ ...s, onboardingProfile: profile }));
+        handleClose();
+      };
+
+      const steps = [
+        {
+          title: "Daily calorie target",
+          desc: "How many calories do you aim for per day?",
+          render: () => (
+            <div className="space-y-3">
+              <input
+                type="number"
+                min="1000"
+                max="6000"
+                step="100"
+                value={answers.calories}
+                onChange={(e) => {
+                  var v = parseInt(e.target.value, 10);
+                  if (v >= 1000 && v <= 6000) setAnswers((a) => ({ ...a, calories: v }));
+                }}
+                className="w-full px-4 py-3 rounded-2xl bg-on-surface/5 text-on-surface font-body text-lg outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-on-surface-variant">Between 1,000 and 6,000 kcal</p>
+            </div>
+          ),
+        },
+        {
+          title: "Primary goal",
+          desc: "What best describes your current goal?",
+          render: () => (
+            <div className="space-y-2">
+              {[["maintain", "Maintain weight"], ["lose", "Lose weight"], ["gain", "Gain weight"]].map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setAnswers((a) => ({ ...a, goal: val }))}
+                  className={`w-full px-4 py-3 rounded-2xl text-left font-body transition ${
+                    answers.goal === val ? "bg-blue-600 text-white" : "bg-on-surface/5 text-on-surface"
+                  }`}
+                >{label}</button>
+              ))}
+            </div>
+          ),
+        },
+        {
+          title: "Dietary pattern",
+          desc: "This helps set supplement defaults.",
+          render: () => (
+            <div className="space-y-2">
+              {[["omnivore", "Omnivore"], ["vegetarian", "Vegetarian"], ["vegan", "Vegan"]].map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setAnswers((a) => ({ ...a, diet: val }))}
+                  className={`w-full px-4 py-3 rounded-2xl text-left font-body transition ${
+                    answers.diet === val ? "bg-blue-600 text-white" : "bg-on-surface/5 text-on-surface"
+                  }`}
+                >{label}</button>
+              ))}
+            </div>
+          ),
+        },
+        {
+          title: "Protein emphasis",
+          desc: "Higher protein adjusts your protein target upward.",
+          render: () => (
+            <div className="space-y-2">
+              {[["standard", "Standard"], ["high", "High protein"]].map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setAnswers((a) => ({ ...a, protein: val }))}
+                  className={`w-full px-4 py-3 rounded-2xl text-left font-body transition ${
+                    answers.protein === val ? "bg-blue-600 text-white" : "bg-on-surface/5 text-on-surface"
+                  }`}
+                >{label}</button>
+              ))}
+            </div>
+          ),
+        },
+      ];
+
+      var current = steps[step];
+      var isLast = step === steps.length - 1;
+
+      return (
+        <div className="fixed inset-0 z-50 animate-fade-in">
+          <div className="absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm" />
+          <div className={`absolute bottom-0 left-0 right-0 bg-surface-container dark:bg-[#0a0a0a] modal-sheet max-h-[85vh] flex flex-col ${closing ? "animate-slide-down" : "animate-slide-up"}`}>
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-on-surface/20" />
+            </div>
+            <div className="flex items-center justify-between px-5 pb-3">
+              <h2 className="font-headline text-lg font-bold">{current.title}</h2>
+              <button onClick={handleSkip} className="text-sm text-on-surface-variant hover:text-on-surface transition">Skip</button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 pb-6">
+              <p className="text-sm text-on-surface-variant mb-4">{current.desc}</p>
+              {current.render()}
+            </div>
+            <div className="px-5 pb-6 pt-2 flex gap-3">
+              {step > 0 && (
+                <button
+                  onClick={() => setStep(step - 1)}
+                  className="flex-1 py-3 rounded-2xl bg-on-surface/5 text-on-surface font-semibold font-label transition hover:bg-on-surface/10"
+                >Back</button>
+              )}
+              <button
+                onClick={isLast ? handleFinish : () => setStep(step + 1)}
+                className="flex-1 py-3 rounded-2xl bg-blue-600 text-white font-semibold font-label transition hover:bg-blue-700"
+              >{isLast ? "Finish" : "Next"}</button>
+            </div>
+            <div className="flex justify-center pb-4 gap-1.5">
+              {steps.map((_, i) => (
+                <div key={i} className={`w-2 h-2 rounded-full transition ${i === step ? "bg-blue-500" : "bg-on-surface/20"}`} />
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // OnboardingGate: renders OnboardingSheet for first-login signed-in users
+    function OnboardingGate() {
+      const { state } = useNutrition();
+      const auth = useAuth();
+      const [dismissed, setDismissed] = useState(false);
+
+      if (dismissed) return null;
+      if (!auth || auth.status !== "signed_in") return null;
+      if (state.onboardingProfile) return null;
+
+      return <OnboardingSheet onClose={() => setDismissed(true)} />;
+    }
+
+    // ============================================================
     // App
     // ============================================================
     function App() {
@@ -2139,6 +2315,8 @@
             {activeTab === "settings" && <SettingsScreen />}
 
             {showLogSheet && <LogDaySheet onClose={() => setShowLogSheet(false)} />}
+
+            <OnboardingGate />
 
             <Toast />
             <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
