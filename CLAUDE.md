@@ -66,5 +66,7 @@ For changes touching auth/CSP/API key/CI, invoke the `security-reviewer` subagen
 
 The `perf-gate` job is disabled (`if: false`); slated for removal with `tests/perf-benchmark.js` and `tests/perf-baseline.json`.
 
+Scheduled API removals (deprecation contract) are tracked in `RETIRED.md`; deprecations are announced in `CHANGELOG.md`. The `npm run audit:legacy` gate (CI-blocking in `verify-build.yml`) fails the build if a retired-but-not-yet-removed name like `Modules.Recipes.computeMealNutrients` reappears in `v2/src/`.
+
 ## Pre-cache invariant
 `PRECACHE_URLS` in `v2/sw.js` mirrors the `<script>`/`<link rel="stylesheet">` tags in `v2/index.html`. Add new same-origin runtime assets to BOTH. Cache strategy + build-hash flow: `v2/sw.js` header.

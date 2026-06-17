@@ -1102,7 +1102,7 @@ function LogDaySheet({
   };
   const projectedNutrients = useMemo(() => {
     if (!selectedRecipe) return emptyNutrients();
-    return Modules.Recipes.computeMealNutrients(allRecipes[selectedRecipe], ingredientStates);
+    return Modules.Recipes.calculateNutrition(allRecipes[selectedRecipe], ingredientStates);
   }, [selectedRecipe, ingredientStates, allRecipes]);
   const handleClose = () => {
     setClosing(true);
@@ -1121,7 +1121,7 @@ function LogDaySheet({
           swapGroup: ing.swapGroup
         };
       });
-      const nutrients = isSingle ? projectedNutrients : Modules.Recipes.computeMealNutrients(recipe, ingStates);
+      const nutrients = isSingle ? projectedNutrients : Modules.Recipes.calculateNutrition(recipe, ingStates);
       return {
         id: genId(),
         recipeId: rid,
@@ -1176,7 +1176,7 @@ function LogDaySheet({
         recipeId: suppId,
         name: recipe.name,
         emoji: recipe.emoji,
-        nutrients: Modules.Recipes.computeMealNutrients(recipe, ingredientStates),
+        nutrients: Modules.Recipes.calculateNutrition(recipe, ingredientStates),
         ingredientStates,
         timestamp: Date.now()
       };
@@ -1517,7 +1517,7 @@ function ClosingGaps({
           qty: ((_Modules$Catalog$getI7 = Modules.Catalog.getIngredient(i.id)) === null || _Modules$Catalog$getI7 === void 0 ? void 0 : _Modules$Catalog$getI7.defaultQty) || 1
         };
       });
-      const rTotals = Modules.Recipes.computeMealNutrients(r, rStates);
+      const rTotals = Modules.Recipes.calculateNutrition(r, rStates);
       const helps = gaps.filter(g => g.type === "under" && (rTotals[g.key] || 0) > 0);
       if (helps.length > 0) result.push({
         id,
