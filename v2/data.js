@@ -61,6 +61,15 @@ const OBJECTIVES = {
 // Estimated daily calorie target (derived from macro objectives midpoints)
 const CALORIE_TARGET = 2400;
 
+// Fallback defaults: repo-canonical targets consumed by Modules.Fallbacks.resolveTarget.
+// Built from CALORIE_TARGET + OBJECTIVES min (or midpoint for range types).
+var FALLBACK_DEFAULTS = { calories: CALORIE_TARGET };
+Object.keys(OBJECTIVES).forEach(function(k) {
+  var o = OBJECTIVES[k];
+  if (o.type === "minimum" || o.type === "range") FALLBACK_DEFAULTS[k] = o.min;
+  else if (o.type === "maximum") FALLBACK_DEFAULTS[k] = o.max;
+});
+
 // ============================================================
 // INGREDIENTS — USDA-based estimates per default serving
 // ============================================================
@@ -636,4 +645,5 @@ var DEFAULT_STATE = {
   themeMode: "dark",
   aiModel: "claude-sonnet-4-6",
   cloudSync: false,
+  onboardingProfile: null,
 };

@@ -35,6 +35,7 @@ var PRECACHE_URLS = [
   "/src/modules/log/day-log.js",
   "/src/modules/log/gap-engine.js",
   "/src/modules/carryover/carryover-engine.js",
+  "/src/modules/fallbacks/fallback-engine.js",
   "/src/modules/history/day-history.js",
   "/src/modules/insights/insights-engine.js",
   "/src/modules/sync/sync-map.js",
