@@ -941,7 +941,7 @@
 
       const projectedNutrients = useMemo(() => {
         if (!selectedRecipe) return emptyNutrients();
-        return Modules.Recipes.computeMealNutrients(allRecipes[selectedRecipe], ingredientStates);
+        return Modules.Recipes.calculateNutrition(allRecipes[selectedRecipe], ingredientStates);
       }, [selectedRecipe, ingredientStates, allRecipes]);
 
       const handleClose = () => {
@@ -963,7 +963,7 @@
               }));
           const nutrients = isSingle
             ? projectedNutrients
-            : Modules.Recipes.computeMealNutrients(recipe, ingStates);
+            : Modules.Recipes.calculateNutrition(recipe, ingStates);
           return {
             id: genId(),
             recipeId: rid,
@@ -1009,7 +1009,7 @@
             recipeId: suppId,
             name: recipe.name,
             emoji: recipe.emoji,
-            nutrients: Modules.Recipes.computeMealNutrients(recipe, ingredientStates),
+            nutrients: Modules.Recipes.calculateNutrition(recipe, ingredientStates),
             ingredientStates,
             timestamp: Date.now(),
           };
@@ -1373,7 +1373,7 @@
             id: i.id,
             qty: Modules.Catalog.getIngredient(i.id)?.defaultQty || 1,
           }));
-          const rTotals = Modules.Recipes.computeMealNutrients(r, rStates);
+          const rTotals = Modules.Recipes.calculateNutrition(r, rStates);
           const helps = gaps.filter((g) => g.type === "under" && (rTotals[g.key] || 0) > 0);
           if (helps.length > 0) result.push({ id, name: r.name, helps: helps.map((h) => h.label) });
         }

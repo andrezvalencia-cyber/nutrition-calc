@@ -1,10 +1,14 @@
 // Recipes module — read access to combined recipe catalog and meal-nutrient math.
 // Source data (RECIPES, SUPPLEMENT_RECIPES) lives in data.js; this module gives
-// the app a stable API for nutrient totals. computeMealNutrients always sums
+// the app a stable API for nutrient totals. calculateNutrition always sums
 // from `states` via getIngNutrients — recipe.verifiedTotal is data-only (tested
 // as a tripwire in v2/tests/integration.test.js).
 //
-// Public API: window.Modules.Recipes.{ getAllRecipes, computeMealNutrients }
+// Public API:
+//   window.Modules.Recipes.{ getAllRecipes, calculateNutrition }
+//   window.NutritionCalculator.calculateNutrition  (public alias of the same fn)
+//   window.Modules.Recipes.computeMealNutrients  — @deprecated v2.3.0, remove v2.5.0
+//     (warns once per session, delegates to calculateNutrition; see RETIRED.md)
 //
 // Soft-fail policy: getIngNutrients warns once (per id) and returns zeros for
 // unknown ingredient ids or non-finite/negative qty. Numeric strings ("48") are
@@ -44,7 +48,7 @@
 
   // Single sum path. verifiedTotal in data.js is data-only (tested as a tripwire
   // in v2/tests/integration.test.js — must equal sum of ingredients at defaults).
-  function computeMealNutrients(recipe, states) {
+  function calculateNutrition(recipe, states) {
     if (!recipe || !states || !states.length) return emptyNutrients();
     var t = emptyNutrients();
     states.forEach(function (s) {
@@ -54,9 +58,23 @@
     return t;
   }
 
+  // @deprecated v2.3.0 — remove v2.5.0. Thin alias kept for one sunset cycle so
+  // callers don't break mid-transition. warnOnce de-dups to a single warning per
+  // page session, then delegates to the canonical calculateNutrition. The message
+  // names the public NutritionCalculator alias. See RETIRED.md + CHANGELOG.md.
+  function computeMealNutrients(recipe, states) {
+    warnOnce("deprecated:computeMealNutrients",
+      "DEPRECATED: Use NutritionCalculator.calculateNutrition()");
+    return calculateNutrition(recipe, states);
+  }
+
   global.Modules = global.Modules || {};
   global.Modules.Recipes = {
     getAllRecipes: getAllRecipes,
-    computeMealNutrients: computeMealNutrients,
+    calculateNutrition: calculateNutrition,
+    computeMealNutrients: computeMealNutrients, // @deprecated v2.3.0 — remove v2.5.0
   };
+  // Public-facing alias named in the deprecation message. Same function object as
+  // Modules.Recipes.calculateNutrition — single implementation, two access paths.
+  global.NutritionCalculator = { calculateNutrition: calculateNutrition };
 })(window);

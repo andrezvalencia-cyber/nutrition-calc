@@ -31,7 +31,7 @@
   }
   function realCompute() {
     var R = global.Modules && global.Modules.Recipes;
-    return (R && R.computeMealNutrients) ? R.computeMealNutrients : function () { return {}; };
+    return (R && R.calculateNutrition) ? R.calculateNutrition : function () { return {}; };
   }
   function newId() {
     if (typeof genId === "function") return genId();

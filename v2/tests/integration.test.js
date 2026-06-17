@@ -1151,7 +1151,7 @@ test.describe('recipe nutrient computation', () => {
           const ing = window.Modules.Catalog.getIngredient(i.id);
           return { id: i.id, qty: ing ? ing.defaultQty : 1 };
         });
-        const computed = window.Modules.Recipes.computeMealNutrients(recipe, states);
+        const computed = window.Modules.Recipes.calculateNutrition(recipe, states);
         Object.keys(recipe.verifiedTotal).forEach((k) => {
           const delta = Math.abs((computed[k] || 0) - (recipe.verifiedTotal[k] || 0));
           if (delta > 0.5) {
@@ -1179,14 +1179,14 @@ test.describe('recipe nutrient computation', () => {
         id: i.id,
         qty: window.Modules.Catalog.getIngredient(i.id).defaultQty,
       }));
-      const before = window.Modules.Recipes.computeMealNutrients(recipe, baseStates);
+      const before = window.Modules.Recipes.calculateNutrition(recipe, baseStates);
       const soyQty = window.Modules.Catalog.getIngredient('soy_protein').defaultQty;
       const swapped = baseStates.map((s, i) =>
         i === 0 ? { id: 'soy_protein', qty: soyQty } : s,
       );
-      window.Modules.Recipes.computeMealNutrients(recipe, swapped);
+      window.Modules.Recipes.calculateNutrition(recipe, swapped);
       const reverted = baseStates.map((s) => ({ ...s }));
-      const after = window.Modules.Recipes.computeMealNutrients(recipe, reverted);
+      const after = window.Modules.Recipes.calculateNutrition(recipe, reverted);
       return { before, after };
     });
     expect(after).toEqual(before);
@@ -1202,7 +1202,7 @@ test.describe('recipe nutrient computation', () => {
     const totals = await page.evaluate(() => {
       const recipe = window.Modules.Recipes.getAllRecipes().morning_shake;
       const states = [{ id: '__nonexistent_xyz__', qty: 100 }];
-      return window.Modules.Recipes.computeMealNutrients(recipe, states);
+      return window.Modules.Recipes.calculateNutrition(recipe, states);
     });
     Object.values(totals).forEach((v) => expect(v).toBe(0));
     expect(warnings.some((w) => w.includes('__nonexistent_xyz__'))).toBe(true);
@@ -1219,10 +1219,10 @@ test.describe('recipe nutrient computation', () => {
       const recipe = window.Modules.Recipes.getAllRecipes().morning_shake;
       const id = recipe.ingredients[0].id;
       return {
-        nan: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: NaN }]),
-        inf: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: Infinity }]),
-        neg: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: -5 }]),
-        undef: window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: undefined }]),
+        nan: window.Modules.Recipes.calculateNutrition(recipe, [{ id, qty: NaN }]),
+        inf: window.Modules.Recipes.calculateNutrition(recipe, [{ id, qty: Infinity }]),
+        neg: window.Modules.Recipes.calculateNutrition(recipe, [{ id, qty: -5 }]),
+        undef: window.Modules.Recipes.calculateNutrition(recipe, [{ id, qty: undefined }]),
       };
     });
     Object.values(cases).forEach((totals) => {
@@ -1237,8 +1237,8 @@ test.describe('recipe nutrient computation', () => {
     const { fromNumber, fromString } = await page.evaluate(() => {
       const recipe = window.Modules.Recipes.getAllRecipes().morning_shake;
       const id = recipe.ingredients[0].id;
-      const fromNumber = window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: 48 }]);
-      const fromString = window.Modules.Recipes.computeMealNutrients(recipe, [{ id, qty: '48' }]);
+      const fromNumber = window.Modules.Recipes.calculateNutrition(recipe, [{ id, qty: 48 }]);
+      const fromString = window.Modules.Recipes.calculateNutrition(recipe, [{ id, qty: '48' }]);
       return { fromNumber, fromString };
     });
     expect(fromString).toEqual(fromNumber);
@@ -1305,5 +1305,82 @@ test.describe('phase 7: service worker', () => {
     for (const k of keys) {
       expect(k).toMatch(/^vitality-v2-(shell|runtime)-/);
     }
+  });
+});
+
+// ── Legacy nutrition-engine deprecation contract (v2.3.0) ────────────────────
+// computeMealNutrients was renamed to calculateNutrition. The old name is a thin
+// alias that warns once per session and delegates. These tests pin the contract:
+//   1. the alias warns exactly once with the mandated migration string,
+//   2. the public NutritionCalculator alias is the same function,
+//   3. normal app usage emits no deprecation warning (call sites migrated).
+// Scheduled for removal in v2.5.0 — see RETIRED.md / CHANGELOG.md.
+test.describe('legacy nutrition-engine deprecation (v2.3.0)', () => {
+  const DEPRECATION_MSG = 'DEPRECATED: Use NutritionCalculator.calculateNutrition()';
+
+  test('computeMealNutrients alias warns exactly once and delegates to calculateNutrition', async ({ page }) => {
+    const warnings = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'warning') warnings.push(msg.text());
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => window.Modules?.Recipes && window.Modules?.Catalog);
+
+    const result = await page.evaluate(() => {
+      const recipe = window.Modules.Recipes.getAllRecipes().morning_shake;
+      const states = recipe.ingredients.map((i) => ({
+        id: i.id,
+        qty: window.Modules.Catalog.getIngredient(i.id).defaultQty,
+      }));
+      // Call the deprecated alias twice; warnOnce must de-dup to a single warning.
+      const a = window.Modules.Recipes.computeMealNutrients(recipe, states);
+      const b = window.Modules.Recipes.computeMealNutrients(recipe, states);
+      const canonical = window.Modules.Recipes.calculateNutrition(recipe, states);
+      return { a, b, canonical };
+    });
+
+    // Alias delegates: byte-identical totals to the canonical function.
+    expect(result.a).toEqual(result.canonical);
+    expect(result.b).toEqual(result.canonical);
+
+    // Hardened assertion: exactly one warning, strictly containing the migration
+    // string — an unrelated warning cannot satisfy this oracle.
+    const deprecationWarnings = warnings.filter((w) => w.includes(DEPRECATION_MSG));
+    expect(deprecationWarnings).toHaveLength(1);
+    expect(deprecationWarnings[0]).toContain('DEPRECATED: Use NutritionCalculator.calculateNutrition()');
+  });
+
+  test('NutritionCalculator public alias is the same function as Modules.Recipes.calculateNutrition', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => window.NutritionCalculator && window.Modules?.Recipes);
+    const same = await page.evaluate(() =>
+      window.NutritionCalculator.calculateNutrition === window.Modules.Recipes.calculateNutrition
+    );
+    expect(same).toBe(true);
+  });
+
+  test('normal meal-logging flow emits no deprecation warning (call sites migrated)', async ({ page }) => {
+    const deprecationWarnings = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'warning' && msg.text().includes('DEPRECATED:')) {
+        deprecationWarnings.push(msg.text());
+      }
+    });
+    await page.goto('/');
+    await page.waitForSelector('input[placeholder="Describe what you ate..."]', { timeout: 8000 });
+
+    // Exercise the meal-logging path that previously called computeMealNutrients
+    // (projected macros + confirm). All call sites now use calculateNutrition.
+    await page.locator('button:has-text("add_circle")').first().click();
+    await page.waitForSelector('h2:has-text("Log Entry")', { timeout: 8000 });
+    const lunchBtn = page.getByRole('button', { name: /^\S+\s+Lunch$/ });
+    await lunchBtn.click();
+    await page.click('button:has-text("Confirm Entry")');
+    await page.waitForFunction(() => {
+      const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+      return (s.dayLog || []).length > 0;
+    }, null, { timeout: 5000 });
+
+    expect(deprecationWarnings).toEqual([]);
   });
 });
