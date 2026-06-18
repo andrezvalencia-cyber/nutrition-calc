@@ -40,6 +40,10 @@ The setter no-ops the real assignment. See `v2/tests/integration.test.js` → `c
 - The project lives entirely under `v2/`. CI deploys only `v2/`.
 - `v2/app.js` is committed and must equal `babel(v2/src/app.jsx)`. The pre-commit hook enforces this; do not edit `app.js` by hand.
 
+## Repo Etiquette
+- Any PR affecting nutrition math or test corpora MUST have all checkboxes in `v2/tests/VALIDATION.md` marked `[x]` by the Nutrition SME to pass CI. The gate is `v2/scripts/audit-test-validation.sh` (`npm run audit:test-validation`), wired blocking into `.github/workflows/verify-build.yml`.
+- The gate enforces **completeness**, not **authenticity**: it pins to the named sign-off labels (`REQUIRED_KEYS` in the script) so hidden-item and decoy-checkbox tricks fail closed (regression-tested by `npm run test:validation-gate`). Authenticity — that the *SME* signed — is enforced by `.github/CODEOWNERS` on `v2/tests/VALIDATION.md` + branch protection requiring code-owner review. Editing a checklist item means updating `REQUIRED_KEYS` and the matching `VALIDATION.md` line in lockstep.
+
 ## Architecture gotchas
 - `v2/tailwind.config.js` `content` MUST include `"./src/app.jsx"`. CSS builds before Babel, so removing it ships a CSS missing every component-level utility class. Local dev hides this.
 - API key: `localStorage['nutrition_calc_v2_api_key']` → direct fetch to `api.anthropic.com` with `anthropic-dangerous-direct-browser-access: true`. No proxy.

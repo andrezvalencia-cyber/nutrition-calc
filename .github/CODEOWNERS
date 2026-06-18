@@ -1,0 +1,14 @@
+# Code owners — GitHub requires review approval from the listed owner(s) when a
+# PR changes a matching path (enable "Require review from Code Owners" in branch
+# protection for this to block merges).
+#
+# The Nutrition SME sign-off gate enforces *completeness* by machine
+# (v2/scripts/audit-test-validation.sh); *authenticity* — that the Nutrition SME
+# actually signed, and that nobody quietly weakens the gate — is enforced here.
+# These three paths therefore require Nutrition SME review:
+#   - the sign-off artifact itself,
+#   - the gate script that defines the required sign-offs, and
+#   - the gate's anti-bypass self-test.
+/v2/tests/VALIDATION.md                   @andrezvalencia-cyber
+/v2/scripts/audit-test-validation.sh      @andrezvalencia-cyber
+/v2/tests/audit-test-validation.test.sh   @andrezvalencia-cyber
