@@ -22,6 +22,11 @@
     if (typeof console !== "undefined" && console.warn) console.warn(msg);
   }
 
+  /**
+   * Return the merged catalog of food recipes and supplement recipes.
+   *
+   * @returns {Object<string, Object>} Combined RECIPES + SUPPLEMENT_RECIPES map.
+   */
   function getAllRecipes() {
     return Object.assign({}, (typeof RECIPES !== "undefined" ? RECIPES : {}),
                              (typeof SUPPLEMENT_RECIPES !== "undefined" ? SUPPLEMENT_RECIPES : {}));
@@ -48,6 +53,17 @@
 
   // Single sum path. verifiedTotal in data.js is data-only (tested as a tripwire
   // in v2/tests/integration.test.js — must equal sum of ingredients at defaults).
+  /**
+   * Sum a recipe's nutrient totals from its current ingredient states.
+   *
+   * @param {Object} recipe - Recipe descriptor; presence-checked only. Falsy →
+   *   all-zero totals.
+   * @param {Array<{id: string, qty: number|string}>} states - Per-ingredient
+   *   amounts. Empty/missing, an unknown `id`, or a non-finite/negative `qty`
+   *   contributes zero — the emptyNutrients() soft-fail.
+   * @returns {Object<string, number>} Totals keyed by NUTRIENT_KEYS
+   *   (emptyNutrients() shape); every value finite — never throws, never NaN.
+   */
   function calculateNutrition(recipe, states) {
     if (!recipe || !states || !states.length) return emptyNutrients();
     var t = emptyNutrients();

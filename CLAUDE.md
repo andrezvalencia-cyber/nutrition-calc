@@ -18,6 +18,7 @@ Builds run automatically. Do not invoke them by hand unless debugging hook outpu
 - `v2/data.js` is plain `<script>` — vanilla JS only. Syntax errors silently break mount.
 - `window.Modules.*` namespace: non-JSX modules under `v2/src/modules/<context>/` self-attach via IIFE. Reach them through the global, never `import`.
 - Pure-logic modules are **dual-mode IIFEs**: they self-attach in the browser AND are `require()`-able from Node, enabling server-free unit tests (e.g. `v2/tests/write-behind.test.js`). Each module's header is its contract — read it instead of re-documenting the Public API here.
+- All public module interfaces under `v2/src/modules/` MUST include JSDoc with `@param` and `@returns` tags.
 - Single-seam rules — full contracts live in each file's header:
   - Auth + supabase client → `Modules.Identity` (`v2/src/modules/identity/auth.js`)
   - Supabase reads → `RemoteStore` (`v2/src/store/remote-store.js`)
@@ -77,6 +78,8 @@ For changes touching auth/CSP/API key/CI, invoke the `security-reviewer` subagen
 The `perf-gate` job is disabled (`if: false`); slated for removal with `tests/perf-benchmark.js` and `tests/perf-baseline.json`.
 
 Scheduled API removals (deprecation contract) are tracked in `RETIRED.md`; deprecations are announced in `CHANGELOG.md`. The `npm run audit:legacy` gate (CI-blocking in `verify-build.yml`) fails the build if a retired-but-not-yet-removed name like `Modules.Recipes.computeMealNutrients` reappears in `v2/src/`.
+
+`npm run audit:docs` (CI-blocking in `verify-build.yml`) enforces JSDoc on public module interfaces deterministically; enforcement is allowlist-staged (currently the Recipes module) and expands via the `ENFORCE` list in `scripts/audit-jsdoc.mjs`.
 
 ## Pre-cache invariant
 `PRECACHE_URLS` in `v2/sw.js` mirrors the `<script>`/`<link rel="stylesheet">` tags in `v2/index.html`. Add new same-origin runtime assets to BOTH. Cache strategy + build-hash flow: `v2/sw.js` header.
