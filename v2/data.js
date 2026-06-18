@@ -637,6 +637,7 @@ var DEFAULT_STATE = {
   currentDate: todayStr(),
   dayLog: [],
   templates: [],
+  customFoods: [],
   onboarded: false,
   fatSolubleCarryover: { b12:0, vit_e:0, vit_d:0 },
   carryoverDaysRemaining: { b12:0, vit_e:0 },
