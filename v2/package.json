@@ -15,7 +15,8 @@
     "test:unit": "node /Users/andyv/Projects/nutrition-calculator/v2/tests/write-behind.test.js",
     "bench": "node tests/benchmarks/performance.js",
     "audit:legacy": "bash scripts/audit-legacy-usage.sh",
-    "audit:docs": "bash scripts/audit-jsdoc.sh"
+    "audit:docs": "bash scripts/audit-jsdoc.sh",
+    "audit:test-validation": "bash scripts/audit-test-validation.sh"
   },
   "keywords": [],
   "author": "",
