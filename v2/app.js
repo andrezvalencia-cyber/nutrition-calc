@@ -538,6 +538,91 @@ function ProgressRing({
 }
 
 // ============================================================
+// MacroIndicator — radial progress for one macro vs its daily target
+// ============================================================
+function MacroIndicator({
+  macro,
+  label,
+  consumed,
+  profile,
+  gradientId,
+  gradientStops,
+  testId
+}) {
+  const resolved = Modules.Fallbacks.resolveTarget(macro, profile, {
+    defaults: FALLBACK_DEFAULTS,
+    unity: 1.0
+  });
+  const target = resolved > 0 ? resolved : 1.0;
+  const raw = consumed / target * 100;
+  const pct = Number.isFinite(raw) ? Math.round(raw) : 0;
+  const fill = Math.max(0, Math.min(100, pct));
+  const r = 26,
+    circ = 2 * Math.PI * r,
+    offset = circ * (1 - fill / 100);
+  const u = NUTRIENT_UNITS[macro];
+  return /*#__PURE__*/React.createElement("div", {
+    "data-testid": testId,
+    className: "liquid-glass rounded-3xl p-5 flex items-center gap-4",
+    role: "progressbar",
+    "aria-valuemin": 0,
+    "aria-valuemax": 100,
+    "aria-valuenow": fill,
+    "aria-valuetext": `${pct}%`,
+    "aria-label": `${label}: ${pct}% of daily target`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "relative",
+    style: {
+      width: 72,
+      height: 72
+    }
+  }, /*#__PURE__*/React.createElement("svg", {
+    width: "72",
+    height: "72",
+    viewBox: "0 0 64 64",
+    className: "-rotate-90"
+  }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("linearGradient", {
+    id: gradientId,
+    x1: "0",
+    y1: "0",
+    x2: "1",
+    y2: "1"
+  }, gradientStops)), /*#__PURE__*/React.createElement("circle", {
+    cx: "32",
+    cy: "32",
+    r: r,
+    fill: "none",
+    stroke: "rgb(var(--color-ring-bg) / 0.06)",
+    strokeWidth: "5"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "32",
+    cy: "32",
+    r: r,
+    fill: "none",
+    stroke: `url(#${gradientId})`,
+    strokeWidth: "5",
+    strokeLinecap: "round",
+    strokeDasharray: circ,
+    strokeDashoffset: offset,
+    style: {
+      transition: "stroke-dashoffset 0.8s ease"
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 flex items-center justify-center"
+  }, /*#__PURE__*/React.createElement("span", {
+    "data-testid": `${testId}-pct`,
+    className: "text-sm font-bold font-headline"
+  }, pct, "%"))), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-semibold font-headline"
+  }, label), /*#__PURE__*/React.createElement("span", {
+    "data-testid": `${testId}-detail`,
+    className: "text-xs text-on-surface-variant"
+  }, Math.round(consumed), u, " / ", Math.round(target), u)));
+}
+
+// ============================================================
 // FocusPoints
 // ============================================================
 function FocusPoints({
@@ -852,6 +937,20 @@ function HomeScreen({
   }, /*#__PURE__*/React.createElement(ProgressRing, {
     closed: gapsClosed,
     total: 16
+  }), /*#__PURE__*/React.createElement(MacroIndicator, {
+    macro: "fat",
+    label: "Fats",
+    consumed: runningTotals.fat || 0,
+    profile: state.profile || null,
+    gradientId: "fatGradient",
+    gradientStops: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("stop", {
+      offset: "0%",
+      stopColor: "#d4a017"
+    }), /*#__PURE__*/React.createElement("stop", {
+      offset: "100%",
+      stopColor: "#f5c542"
+    })),
+    testId: "fats-indicator"
   }), /*#__PURE__*/React.createElement(FocusPoints, {
     gaps: gaps,
     runningTotals: runningTotals
