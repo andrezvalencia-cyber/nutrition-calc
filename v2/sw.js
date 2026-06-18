@@ -32,6 +32,7 @@ var PRECACHE_URLS = [
   "/src/modules/catalog/ingredients.js",
   "/src/modules/recipes/recipes.js",
   "/src/modules/templates/templates.js",
+  "/src/modules/customfoods/custom-foods.js",
   "/src/modules/log/day-log.js",
   "/src/modules/log/gap-engine.js",
   "/src/modules/carryover/carryover-engine.js",

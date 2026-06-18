@@ -950,6 +950,86 @@
       const [closing, setClosing] = useState(false);
       const selectedRecipe = selectedRecipes.length === 1 ? selectedRecipes[0] : null;
 
+      // ── Search ──────────────────────────────────────────────────────────────
+      const [query, setQuery] = useState("");
+      const searchRef = useRef(null);
+
+      // ── Scanner ─────────────────────────────────────────────────────────────
+      const [showScanner, setShowScanner] = useState(false);
+      const scannerSupported = !!(window.Modules && window.Modules.Scanner && window.Modules.Scanner.isSupported());
+
+      // ── Custom Food wizard ──────────────────────────────────────────────────
+      const [wizardOpen, setWizardOpen] = useState(false);
+      const [wizardEdit, setWizardEdit] = useState(null);
+      const [wizardName, setWizardName] = useState("");
+      const [wizardEmoji, setWizardEmoji] = useState("\u{1F372}");
+      const [wizardNutrients, setWizardNutrients] = useState(() => emptyNutrients());
+      const [wizardBarcode, setWizardBarcode] = useState(null);
+
+      const openWizard = (prefill) => {
+        setWizardEdit(null);
+        setWizardName((prefill && prefill.name) || "");
+        setWizardEmoji((prefill && prefill.emoji) || "\u{1F372}");
+        setWizardNutrients(emptyNutrients());
+        setWizardBarcode((prefill && prefill.barcode) || null);
+        setWizardOpen(true);
+      };
+
+      const openWizardEdit = (cf) => {
+        setWizardEdit(cf.id);
+        setWizardName(cf.name);
+        setWizardEmoji(cf.emoji || "\u{1F372}");
+        setWizardNutrients({ ...cf.nutrients });
+        setWizardBarcode(cf.barcode || null);
+        setWizardOpen(true);
+      };
+
+      const saveWizard = () => {
+        if (wizardEdit) {
+          setState((s) => Modules.CustomFoods.updateCustomFood(s, wizardEdit, {
+            name: wizardName, emoji: wizardEmoji, nutrients: wizardNutrients, barcode: wizardBarcode,
+          }));
+          showToast({ text: `Updated: ${wizardName.slice(0, Modules.CustomFoods.NAME_MAX)}` });
+        } else {
+          const cf = Modules.CustomFoods.buildCustomFood(wizardName, wizardEmoji, wizardNutrients, wizardBarcode);
+          setState((s) => Modules.CustomFoods.addCustomFood(s, cf));
+          showToast({ text: `Created: ${cf.name}` });
+        }
+        setWizardOpen(false);
+      };
+
+      // ── Long-press for custom food editing ──────────────────────────────────
+      const longPressTimer = useRef(null);
+      const longPressFired = useRef(false);
+
+      const startLongPress = (cf) => {
+        longPressFired.current = false;
+        longPressTimer.current = setTimeout(() => {
+          longPressFired.current = true;
+          openWizardEdit(cf);
+        }, 500);
+      };
+      const cancelLongPress = () => {
+        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+      };
+
+      // ── Keyboard-safe layout ────────────────────────────────────────────────
+      const [kbOffset, setKbOffset] = useState(0);
+      useEffect(() => {
+        const vv = window.visualViewport;
+        if (!vv) return;
+        const update = () => {
+          const diff = window.innerHeight - vv.height - vv.offsetTop;
+          setKbOffset(diff > 0 ? diff : 0);
+        };
+        vv.addEventListener("resize", update);
+        vv.addEventListener("scroll", update);
+        return () => {
+          vv.removeEventListener("resize", update);
+          vv.removeEventListener("scroll", update);
+        };
+      }, []);
+
       const mealRecipes = useMemo(() =>
         Object.entries(allRecipes).filter(([, r]) => r.type === "meal" || r.type === "snack" || r.type === "supplement_food"),
         [allRecipes]
@@ -959,7 +1039,21 @@
         [allRecipes]
       );
 
+      const customFoods = state.customFoods || [];
+
+      // ── Filtered pills (recipes + templates + custom foods) ─────────────────
+      const lowerQuery = query.toLowerCase().trim();
+      const filteredMealRecipes = useMemo(() =>
+        lowerQuery ? mealRecipes.filter(([, r]) => r.name.toLowerCase().includes(lowerQuery)) : mealRecipes,
+        [mealRecipes, lowerQuery]
+      );
+      const filteredCustomFoods = useMemo(() =>
+        lowerQuery ? customFoods.filter((cf) => cf.name.toLowerCase().includes(lowerQuery)) : customFoods,
+        [customFoods, lowerQuery]
+      );
+
       const [checkedSupps, setCheckedSupps] = useState({});
+      const [selectedCustomFoods, setSelectedCustomFoods] = useState({});
 
       const handleSelectRecipe = (id) => {
         const recipe = allRecipes[id];
@@ -980,6 +1074,10 @@
         });
       };
 
+      const toggleCustomFood = (id) => {
+        setSelectedCustomFoods((prev) => ({ ...prev, [id]: !prev[id] }));
+      };
+
       const updateIngQty = (idx, qty) => {
         setIngredientStates((prev) => prev.map((s, i) => i === idx ? { ...s, qty: Math.max(0, qty) } : s));
       };
@@ -998,6 +1096,18 @@
       const handleClose = () => {
         setClosing(true);
         setTimeout(onClose, 300);
+      };
+
+      // ── Scan decode handler ─────────────────────────────────────────────────
+      const handleScanDecode = (code) => {
+        setShowScanner(false);
+        setQuery(code);
+        const lc = code.toLowerCase().trim();
+        const anyMatch = mealRecipes.some(([, r]) => r.name.toLowerCase().includes(lc))
+          || customFoods.some((cf) => cf.name.toLowerCase().includes(lc));
+        if (!anyMatch) {
+          openWizard({ barcode: code });
+        }
       };
 
       const handleConfirmMeal = () => {
@@ -1044,6 +1154,30 @@
             showToast({ text: `Added ${mealEntries.length} meals` });
           }
         }
+
+        // Add selected custom foods as recipe-less entries
+        customFoods.forEach((cf) => {
+          if (!selectedCustomFoods[cf.id]) return;
+          const entry = {
+            id: genId(),
+            recipeId: null,
+            name: cf.name,
+            emoji: cf.emoji,
+            nutrients: cf.nutrients,
+            ingredientStates: [],
+            custom: true,
+            timestamp: Date.now(),
+          };
+          setState((s) => Modules.Log.addEntry(s, entry));
+          if (isSyncEnabled(auth, state)) {
+            window.WriteBehind.enqueue({
+              table: "day_entries", op: "upsert",
+              payload: buildEntryRow(entry, auth.user.id, state.currentDate),
+              rollback: () => setState((s) => Modules.Log.removeEntry(s, entry.id)),
+            });
+          }
+        });
+
         // Add checked supplements
         Object.entries(checkedSupps).forEach(([suppId, checked]) => {
           if (!checked) return;
@@ -1086,11 +1220,13 @@
 
       // ── Templates: one-tap re-log + create-from-current-selection ──────────
       const templates = state.templates || [];
-      const [creatingName, setCreatingName] = useState(null); // null = closed; string = input value
+      const filteredTemplates = useMemo(() =>
+        lowerQuery ? templates.filter((t) => t.name.toLowerCase().includes(lowerQuery)) : templates,
+        [templates, lowerQuery]
+      );
+      const [creatingName, setCreatingName] = useState(null);
       const canCreate = selectedRecipes.length > 0 || Object.values(checkedSupps).some(Boolean);
 
-      // Low-friction fast path: resolve a template and log all its entries.
-      // Degraded (unresolvable) templates are no-ops — the chip is disabled too.
       const logTemplate = (tpl) => {
         const res = Modules.Templates.resolveTemplate(tpl, allRecipes);
         if (!res.ok || res.entries.length === 0) return;
@@ -1109,7 +1245,6 @@
         handleClose();
       };
 
-      // Snapshot the current meal + supplement selection into template refs.
       const buildCurrentRefs = () => {
         const refs = [];
         const isSingle = selectedRecipes.length === 1;
@@ -1146,17 +1281,103 @@
         if (refs.length === 0) return;
         const firstRecipe = allRecipes[refs[0].recipeId];
         const emoji = (firstRecipe && firstRecipe.emoji) || "\u{1F37D}";
-        // Name comes from the user-controlled input below — never hardcoded.
         const tpl = Modules.Templates.buildTemplate(creatingName || "My Template", emoji, refs);
         setState((s) => Modules.Templates.addTemplate(s, tpl));
         showToast({ text: `Saved template: ${tpl.name}` });
         setCreatingName(null);
       };
 
+      const hasAnySelection = selectedRecipes.length > 0
+        || Object.values(checkedSupps).some(Boolean)
+        || Object.values(selectedCustomFoods).some(Boolean);
+
+      // ── Custom Food Wizard (inline overlay) ─────────────────────────────────
+      if (wizardOpen) {
+        return (
+          <div className="fixed inset-0 z-[60] animate-fade-in">
+            <div className="absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm" onClick={() => setWizardOpen(false)} />
+            <div className="absolute bottom-0 left-0 right-0 bg-surface-container dark:bg-[#0a0a0a] modal-sheet max-h-[85vh] flex flex-col animate-slide-up"
+                 style={kbOffset > 0 ? { paddingBottom: kbOffset } : undefined}>
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full bg-on-surface/20" />
+              </div>
+              <div className="flex items-center justify-between px-5 pb-3">
+                <h2 className="font-headline text-lg font-bold">{wizardEdit ? "Edit Custom Food" : "New Custom Food"}</h2>
+                <button onClick={() => setWizardOpen(false)} className="p-1 hover:bg-on-surface/10 rounded-full transition">
+                  <Icon name="close" size={22} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 pb-24 space-y-4" data-testid="custom-food-wizard">
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    autoFocus
+                    maxLength={Modules.CustomFoods.NAME_MAX}
+                    value={wizardName}
+                    onChange={(e) => setWizardName(e.target.value)}
+                    placeholder="Food name"
+                    data-testid="cf-name"
+                    className="flex-1 bg-on-surface/5 rounded-xl px-4 py-2.5 text-sm placeholder:text-on-surface-variant/40"
+                  />
+                  <input
+                    type="text"
+                    maxLength={2}
+                    value={wizardEmoji}
+                    onChange={(e) => setWizardEmoji(e.target.value)}
+                    className="w-14 bg-on-surface/5 rounded-xl px-2 py-2.5 text-center text-lg"
+                    aria-label="Emoji"
+                  />
+                </div>
+                {wizardBarcode && (
+                  <div className="flex items-center gap-2 bg-on-surface/5 rounded-xl px-4 py-2 text-xs text-on-surface-variant">
+                    <Icon name="qr_code_scanner" size={16} />
+                    <span>Barcode Reference: {wizardBarcode}</span>
+                  </div>
+                )}
+                <h3 className="font-headline text-sm font-semibold text-on-surface-variant">Nutrients per serving</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {NUTRIENT_KEYS.map((k) => (
+                    <div key={k} className="flex items-center gap-2 bg-on-surface/5 rounded-xl px-3 py-2">
+                      <label className="text-xs text-on-surface-variant flex-1 truncate">{NUTRIENT_LABELS[k]}</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={wizardNutrients[k] || ""}
+                        onChange={(e) => setWizardNutrients((prev) => ({ ...prev, [k]: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 }))}
+                        data-testid={`cf-${k}`}
+                        className="w-16 bg-transparent text-right text-sm font-semibold"
+                      />
+                      <span className="text-xs text-on-surface-variant/60 w-8">{NUTRIENT_UNITS[k]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 p-5 sheet-bottom-fade">
+                <button
+                  onClick={saveWizard}
+                  disabled={!wizardName.trim()}
+                  data-testid="cf-save"
+                  className="w-full pill-active rounded-full py-3.5 text-white font-semibold font-headline text-sm disabled:opacity-40 transition"
+                >
+                  {wizardEdit ? "Update Food" : "Create Food"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // ── Scanner modal ───────────────────────────────────────────────────────
+      if (showScanner) {
+        return <CameraScanModal onDecode={handleScanDecode} onClose={() => setShowScanner(false)} />;
+      }
+
       return (
         <div className="fixed inset-0 z-[60] animate-fade-in">
           <div className="absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm" onClick={handleClose} />
-          <div className={`absolute bottom-0 left-0 right-0 bg-surface-container dark:bg-[#0a0a0a] modal-sheet max-h-[85vh] flex flex-col ${closing ? "animate-slide-down" : "animate-slide-up"}`}>
+          <div className={`absolute bottom-0 left-0 right-0 bg-surface-container dark:bg-[#0a0a0a] modal-sheet max-h-[85vh] flex flex-col ${closing ? "animate-slide-down" : "animate-slide-up"}`}
+               style={kbOffset > 0 ? { paddingBottom: kbOffset } : undefined}>
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-on-surface/20" />
@@ -1166,6 +1387,40 @@
               <h2 className="font-headline text-lg font-bold">Log Entry</h2>
               <button onClick={handleClose} className="p-1 hover:bg-on-surface/10 rounded-full transition">
                 <Icon name="close" size={22} />
+              </button>
+            </div>
+
+            {/* Search + Scan bar */}
+            <div className="px-5 pb-3 flex gap-2">
+              <div className="flex-1 relative">
+                <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search meals, templates, foods…"
+                  data-testid="log-search"
+                  className="w-full liquid-glass rounded-xl pl-9 pr-4 py-2.5 text-sm placeholder:text-on-surface-variant/40"
+                />
+              </div>
+              {scannerSupported && (
+                <button
+                  onClick={() => setShowScanner(true)}
+                  data-testid="scan-trigger"
+                  className="liquid-glass rounded-xl px-3 flex items-center justify-center"
+                  aria-label="Scan barcode"
+                >
+                  <Icon name="qr_code_scanner" size={20} />
+                </button>
+              )}
+              <button
+                onClick={() => openWizard({})}
+                data-testid="new-custom-food"
+                className="liquid-glass rounded-xl px-3 flex items-center justify-center"
+                aria-label="New custom food"
+              >
+                <Icon name="add" size={20} />
               </button>
             </div>
 
@@ -1186,13 +1441,12 @@
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 pb-24 space-y-4">
-              {/* Templates — one-tap re-log, prioritized above individual entry.
-                  Unresolvable templates render degraded (disabled) instead of crashing. */}
-              {templates.length > 0 && (
+              {/* Templates */}
+              {filteredTemplates.length > 0 && (
                 <div className="space-y-2">
                   <h3 className="font-headline text-base font-semibold">Your Templates</h3>
                   <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                    {templates.map((tpl) => {
+                    {filteredTemplates.map((tpl) => {
                       const res = Modules.Templates.resolveTemplate(tpl, allRecipes);
                       const degraded = !res.ok;
                       return (
@@ -1221,9 +1475,9 @@
 
               {tab === "meals" && (
                 <>
-                  {/* Frequent Meals */}
-                  <div className="flex flex-wrap gap-2">
-                    {mealRecipes.map(([id, r]) => (
+                  {/* Recipe pills */}
+                  <div className="flex flex-wrap gap-2" data-testid="meal-pills">
+                    {filteredMealRecipes.map(([id, r]) => (
                       <button
                         key={id}
                         onClick={() => handleSelectRecipe(id)}
@@ -1238,6 +1492,34 @@
                       </button>
                     ))}
                   </div>
+
+                  {/* Custom food pills */}
+                  {filteredCustomFoods.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="font-headline text-sm font-semibold text-on-surface-variant">Custom Foods</h3>
+                      <div className="flex flex-wrap gap-2" data-testid="custom-food-pills">
+                        {filteredCustomFoods.map((cf) => (
+                          <button
+                            key={cf.id}
+                            onClick={() => { if (!longPressFired.current) toggleCustomFood(cf.id); }}
+                            onPointerDown={() => startLongPress(cf)}
+                            onPointerUp={cancelLongPress}
+                            onPointerLeave={cancelLongPress}
+                            data-testid="custom-food-chip"
+                            data-cf-id={cf.id}
+                            aria-pressed={!!selectedCustomFoods[cf.id]}
+                            className={`px-4 py-2 rounded-full text-sm font-label transition-all border ${
+                              selectedCustomFoods[cf.id]
+                                ? "border-primary/40 bg-primary/10 text-white"
+                                : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"
+                            }`}
+                          >
+                            {cf.emoji} {cf.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Meal Detail */}
                   {selectedRecipe && allRecipes[selectedRecipe] && (
@@ -1326,8 +1608,7 @@
                 </div>
               )}
 
-              {/* Create Template from the current meal/supplement selection.
-                  Name is supplied at runtime via a controlled input. */}
+              {/* Create Template */}
               {canCreate && (
                 creatingName === null ? (
                   <button
@@ -1361,7 +1642,7 @@
             <div className="absolute bottom-0 left-0 right-0 p-5 sheet-bottom-fade">
               <button
                 onClick={handleConfirmMeal}
-                disabled={selectedRecipes.length === 0 && !Object.values(checkedSupps).some(Boolean)}
+                disabled={!hasAnySelection}
                 className="w-full pill-active rounded-full py-3.5 text-white font-semibold font-headline text-sm disabled:opacity-40 transition"
               >
                 {selectedRecipes.length > 1 ? `Confirm Entry (${selectedRecipes.length})` : "Confirm Entry"}
