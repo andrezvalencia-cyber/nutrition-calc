@@ -721,15 +721,19 @@
         <div className="pt-20 pb-28 px-4 space-y-6">
           <ProgressRing closed={gapsClosed} total={16} />
 
-          <MacroIndicator
-            macro="fat"
-            label="Fats"
-            consumed={runningTotals.fat || 0}
-            profile={state.profile || null}
-            gradientId="fatGradient"
-            gradientStops={<><stop offset="0%" stopColor="#d4a017" /><stop offset="100%" stopColor="#f5c542" /></>}
-            testId="fats-indicator"
-          />
+          {/* Quick Entry — opens the log sheet in a clean, focus-ready state */}
+          <div className="flex flex-col items-center gap-1.5">
+            <button
+              onClick={onOpenLog}
+              data-testid="quick-entry-button"
+              aria-label="Quick entry"
+              className="liquid-glass w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition-transform"
+              style={{ transitionTimingFunction: "var(--spring-ease)" }}
+            >
+              <Icon name="add" size={28} className="text-blue-400" />
+            </button>
+            <span className="text-xs text-on-surface-variant text-center">Quick Entry</span>
+          </div>
 
           <FocusPoints gaps={gaps} runningTotals={runningTotals} />
 
@@ -1028,6 +1032,16 @@
           vv.removeEventListener("resize", update);
           vv.removeEventListener("scroll", update);
         };
+      }, []);
+
+      // ── Focus the search field when the sheet opens (clean, ready-to-type) ──
+      useEffect(() => {
+        if (closing) return;
+        const id = requestAnimationFrame(() => {
+          const el = searchRef.current;
+          if (el && el.isConnected) el.focus();
+        });
+        return () => cancelAnimationFrame(id);
       }, []);
 
       const mealRecipes = useMemo(() =>
@@ -1829,10 +1843,8 @@
             <p className="text-on-surface-variant text-sm mt-1">Overview of your daily intake</p>
           </div>
 
-          {/* Bento Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Calories Hero */}
-            <div className="col-span-2 liquid-glass p-5 rounded-[24px]">
+          {/* Calories Hero */}
+          <div className="liquid-glass p-5 rounded-[24px]">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-on-surface-variant font-label">Calories</span>
                 <span className="text-sm text-on-surface-variant">{cals} / {calTarget} kcal</span>
@@ -1847,10 +1859,11 @@
               <p className="text-xs text-on-surface-variant">kcal</p>
             </div>
 
-            {/* Protein */}
-            <MacroCard label="Protein" nutrientKey="protein" color="blue" />
-            {/* Carbs */}
-            <MacroCard label="Carbs" nutrientKey="carbs" color="green" />
+          {/* Macros — Protein | Fats | Carbs (always-on) */}
+          <div className="flex gap-3" role="group" aria-label="Daily Macros">
+            <MacroCard label="Protein" nutrientKey="protein" color="blue" testId="macro-protein" />
+            <MacroCard label="Fats" nutrientKey="fat" color="amber" testId="macro-fats" />
+            <MacroCard label="Carbs" nutrientKey="carbs" color="green" testId="macro-carbs" />
           </div>
 
           {/* Vitamins */}
@@ -1865,21 +1878,21 @@
       );
     }
 
-    function MacroCard({ label, nutrientKey, color }) {
+    function MacroCard({ label, nutrientKey, color, testId }) {
       const { runningTotals } = useNutrition();
       const val = runningTotals[nutrientKey] || 0;
       const status = getStatus(nutrientKey, val);
       const pct = Math.min(100, status.pct);
-      const colorMap = { blue: "from-blue-600 to-blue-400", green: "from-green-600 to-green-400", purple: "from-purple-600 to-purple-400" };
+      const colorMap = { blue: "from-blue-600 to-blue-400", green: "from-green-600 to-green-400", purple: "from-purple-600 to-purple-400", amber: "from-amber-600 to-amber-400" };
 
       return (
-        <div className="liquid-glass p-4 rounded-[24px] h-40 flex flex-col justify-between">
-          <div>
-            <span className="text-xs text-on-surface-variant font-label">{label}</span>
-            <p className="font-headline text-2xl font-bold mt-1">{fmtVal(nutrientKey, val)}</p>
+        <div data-testid={testId} className="liquid-glass p-3 rounded-[24px] h-40 flex-1 min-w-0 flex flex-col justify-between">
+          <div className="min-w-0">
+            <span className="block text-xs text-on-surface-variant font-label truncate">{label}</span>
+            <p className="font-headline font-bold mt-1 truncate" style={{ fontSize: "clamp(1.05rem, 5vw, 1.5rem)" }}>{fmtVal(nutrientKey, val)}</p>
           </div>
-          <div>
-            <div className="text-xs text-on-surface-variant mb-1">{getTargetStr(nutrientKey)}</div>
+          <div className="min-w-0">
+            <div className="text-xs text-on-surface-variant mb-1 truncate">{getTargetStr(nutrientKey)}</div>
             <div className="w-full h-2 rounded-full bg-on-surface/5 overflow-hidden">
               <div
                 className={`h-full rounded-full bg-gradient-to-r ${colorMap[color]} transition-all duration-500`}
