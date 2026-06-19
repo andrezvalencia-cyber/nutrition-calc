@@ -937,21 +937,23 @@ function HomeScreen({
   }, /*#__PURE__*/React.createElement(ProgressRing, {
     closed: gapsClosed,
     total: 16
-  }), /*#__PURE__*/React.createElement(MacroIndicator, {
-    macro: "fat",
-    label: "Fats",
-    consumed: runningTotals.fat || 0,
-    profile: state.profile || null,
-    gradientId: "fatGradient",
-    gradientStops: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("stop", {
-      offset: "0%",
-      stopColor: "#d4a017"
-    }), /*#__PURE__*/React.createElement("stop", {
-      offset: "100%",
-      stopColor: "#f5c542"
-    })),
-    testId: "fats-indicator"
-  }), /*#__PURE__*/React.createElement(FocusPoints, {
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-col items-center gap-1.5"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: onOpenLog,
+    "data-testid": "quick-entry-button",
+    "aria-label": "Quick entry",
+    className: "liquid-glass w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition-transform",
+    style: {
+      transitionTimingFunction: "var(--spring-ease)"
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "add",
+    size: 28,
+    className: "text-blue-400"
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-on-surface-variant text-center"
+  }, "Quick Entry")), /*#__PURE__*/React.createElement(FocusPoints, {
     gaps: gaps,
     runningTotals: runningTotals
   }), gaps.length > 0 && /*#__PURE__*/React.createElement("button", {
@@ -1243,6 +1245,16 @@ function LogDaySheet({
       vv.removeEventListener("resize", update);
       vv.removeEventListener("scroll", update);
     };
+  }, []);
+
+  // ── Focus the search field when the sheet opens (clean, ready-to-type) ──
+  useEffect(() => {
+    if (closing) return;
+    const id = requestAnimationFrame(() => {
+      const el = searchRef.current;
+      if (el && el.isConnected) el.focus();
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
   const mealRecipes = useMemo(() => Object.entries(allRecipes).filter(([, r]) => r.type === "meal" || r.type === "snack" || r.type === "supplement_food"), [allRecipes]);
   const suppRecipes = useMemo(() => Object.entries(allRecipes).filter(([, r]) => r.type === "supplement"), [allRecipes]);
@@ -2013,9 +2025,7 @@ function DashboardScreen() {
   }, "Dashboard"), /*#__PURE__*/React.createElement("p", {
     className: "text-on-surface-variant text-sm mt-1"
   }, "Overview of your daily intake")), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 gap-4"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "col-span-2 liquid-glass p-5 rounded-[24px]"
+    className: "liquid-glass p-5 rounded-[24px]"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-3"
   }, /*#__PURE__*/React.createElement("span", {
@@ -2033,14 +2043,25 @@ function DashboardScreen() {
     className: "font-headline text-3xl font-extrabold mt-3"
   }, cals), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-on-surface-variant"
-  }, "kcal")), /*#__PURE__*/React.createElement(MacroCard, {
+  }, "kcal")), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-3",
+    role: "group",
+    "aria-label": "Daily Macros"
+  }, /*#__PURE__*/React.createElement(MacroCard, {
     label: "Protein",
     nutrientKey: "protein",
-    color: "blue"
+    color: "blue",
+    testId: "macro-protein"
+  }), /*#__PURE__*/React.createElement(MacroCard, {
+    label: "Fats",
+    nutrientKey: "fat",
+    color: "amber",
+    testId: "macro-fats"
   }), /*#__PURE__*/React.createElement(MacroCard, {
     label: "Carbs",
     nutrientKey: "carbs",
-    color: "green"
+    color: "green",
+    testId: "macro-carbs"
   })), /*#__PURE__*/React.createElement(NutrientGroup, {
     title: "Vitamins",
     keys: VITAMIN_KEYS,
@@ -2058,7 +2079,8 @@ function DashboardScreen() {
 function MacroCard({
   label,
   nutrientKey,
-  color
+  color,
+  testId
 }) {
   const {
     runningTotals
@@ -2069,16 +2091,25 @@ function MacroCard({
   const colorMap = {
     blue: "from-blue-600 to-blue-400",
     green: "from-green-600 to-green-400",
-    purple: "from-purple-600 to-purple-400"
+    purple: "from-purple-600 to-purple-400",
+    amber: "from-amber-600 to-amber-400"
   };
   return /*#__PURE__*/React.createElement("div", {
-    className: "liquid-glass p-4 rounded-[24px] h-40 flex flex-col justify-between"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-on-surface-variant font-label"
+    "data-testid": testId,
+    className: "liquid-glass p-3 rounded-[24px] h-40 flex-1 min-w-0 flex flex-col justify-between"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "block text-xs text-on-surface-variant font-label truncate"
   }, label), /*#__PURE__*/React.createElement("p", {
-    className: "font-headline text-2xl font-bold mt-1"
-  }, fmtVal(nutrientKey, val))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "text-xs text-on-surface-variant mb-1"
+    className: "font-headline font-bold mt-1 truncate",
+    style: {
+      fontSize: "clamp(1.05rem, 5vw, 1.5rem)"
+    }
+  }, fmtVal(nutrientKey, val))), /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-on-surface-variant mb-1 truncate"
   }, getTargetStr(nutrientKey)), /*#__PURE__*/React.createElement("div", {
     className: "w-full h-2 rounded-full bg-on-surface/5 overflow-hidden"
   }, /*#__PURE__*/React.createElement("div", {

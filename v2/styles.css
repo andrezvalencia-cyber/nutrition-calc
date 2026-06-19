@@ -157,7 +157,7 @@ body {
 }
 
 .animate-slide-up {
-  animation: slideUp 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: slideUp 0.4s var(--spring-ease) forwards;
 }
 
 @keyframes slideDown {
@@ -166,7 +166,7 @@ body {
 }
 
 .animate-slide-down {
-  animation: slideDown 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: slideDown 0.3s var(--spring-ease) forwards;
 }
 
 /* ---- Fade in ---- */
