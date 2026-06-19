@@ -1252,8 +1252,24 @@ function LogDaySheet({
   const lowerQuery = query.toLowerCase().trim();
   const filteredMealRecipes = useMemo(() => lowerQuery ? mealRecipes.filter(([, r]) => r.name.toLowerCase().includes(lowerQuery)) : mealRecipes, [mealRecipes, lowerQuery]);
   const filteredCustomFoods = useMemo(() => lowerQuery ? customFoods.filter(cf => cf.name.toLowerCase().includes(lowerQuery)) : customFoods, [customFoods, lowerQuery]);
+  const filteredIngredients = useMemo(() => lowerQuery ? Modules.Catalog.searchIngredients(lowerQuery) : [], [lowerQuery]);
+  const CATEGORY_EMOJI = {
+    protein: "\u{1F356}",
+    grain: "\u{1F33E}",
+    seed: "\u{1F330}",
+    nut: "\u{1F330}",
+    fruit: "\u{1F34E}",
+    vegetable: "\u{1F96C}",
+    dairy: "\u{1F95B}",
+    fat: "\u{1FAD2}",
+    condiment: "\u{1F9C2}",
+    spice: "\u{1F9C2}",
+    snack: "\u{1F36A}",
+    supplement_food: "\u{1F372}"
+  };
   const [checkedSupps, setCheckedSupps] = useState({});
   const [selectedCustomFoods, setSelectedCustomFoods] = useState({});
+  const [selectedIngredients, setSelectedIngredients] = useState({});
   const handleSelectRecipe = id => {
     const recipe = allRecipes[id];
     if (!recipe) return;
@@ -1277,6 +1293,12 @@ function LogDaySheet({
   };
   const toggleCustomFood = id => {
     setSelectedCustomFoods(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+  const toggleIngredient = id => {
+    setSelectedIngredients(prev => ({
       ...prev,
       [id]: !prev[id]
     }));
@@ -1379,6 +1401,38 @@ function LogDaySheet({
         nutrients: cf.nutrients,
         ingredientStates: [],
         custom: true,
+        timestamp: Date.now()
+      };
+      setState(s => Modules.Log.addEntry(s, entry));
+      if (isSyncEnabled(auth, state)) {
+        window.WriteBehind.enqueue({
+          table: "day_entries",
+          op: "upsert",
+          payload: buildEntryRow(entry, auth.user.id, state.currentDate),
+          rollback: () => setState(s => Modules.Log.removeEntry(s, entry.id))
+        });
+      }
+    });
+
+    // Add selected catalog ingredients as recipe-less entries
+    Object.entries(selectedIngredients).forEach(([ingId, selected]) => {
+      if (!selected) return;
+      const ing = Modules.Catalog.getIngredient(ingId);
+      if (!ing) return;
+      const ingStates = [{
+        id: ingId,
+        qty: ing.defaultQty
+      }];
+      const nutrients = Modules.Recipes.calculateNutrition({}, ingStates);
+      const entry = {
+        id: genId(),
+        recipeId: null,
+        name: ing.name,
+        emoji: CATEGORY_EMOJI[ing.category] || "\u{1F37D}",
+        nutrients,
+        ingredientStates: ingStates,
+        custom: false,
+        source: "catalog",
         timestamp: Date.now()
       };
       setState(s => Modules.Log.addEntry(s, entry));
@@ -1516,7 +1570,7 @@ function LogDaySheet({
     });
     setCreatingName(null);
   };
-  const hasAnySelection = selectedRecipes.length > 0 || Object.values(checkedSupps).some(Boolean) || Object.values(selectedCustomFoods).some(Boolean);
+  const hasAnySelection = selectedRecipes.length > 0 || Object.values(checkedSupps).some(Boolean) || Object.values(selectedCustomFoods).some(Boolean) || Object.values(selectedIngredients).some(Boolean);
 
   // ── Custom Food Wizard (inline overlay) ─────────────────────────────────
   if (wizardOpen) {
@@ -1725,7 +1779,21 @@ function LogDaySheet({
     "data-cf-id": cf.id,
     "aria-pressed": !!selectedCustomFoods[cf.id],
     className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${selectedCustomFoods[cf.id] ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
-  }, cf.emoji, " ", cf.name)))), selectedRecipe && allRecipes[selectedRecipe] && /*#__PURE__*/React.createElement("div", {
+  }, cf.emoji, " ", cf.name)))), filteredIngredients.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "font-headline text-sm font-semibold text-on-surface-variant"
+  }, "Foods"), /*#__PURE__*/React.createElement("div", {
+    className: "flex flex-wrap gap-2",
+    "data-testid": "ingredient-pills"
+  }, filteredIngredients.map(ing => /*#__PURE__*/React.createElement("button", {
+    key: ing.id,
+    onClick: () => toggleIngredient(ing.id),
+    "data-testid": `ingredient-pill-${ing.id}`,
+    "data-ing-id": ing.id,
+    "aria-pressed": !!selectedIngredients[ing.id],
+    className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${selectedIngredients[ing.id] ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
+  }, CATEGORY_EMOJI[ing.category] || "\u{1F37D}", " ", ing.name)))), selectedRecipe && allRecipes[selectedRecipe] && /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "font-headline text-base font-semibold"
