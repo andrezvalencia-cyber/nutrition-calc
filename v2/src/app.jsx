@@ -1031,6 +1031,8 @@
       const [wizardEmoji, setWizardEmoji] = useState("\u{1F372}");
       const [wizardNutrients, setWizardNutrients] = useState(() => emptyNutrients());
       const [wizardBarcode, setWizardBarcode] = useState(null);
+      const [wizardReplaceId, setWizardReplaceId] = useState(null);
+      const [wizardShowReplace, setWizardShowReplace] = useState(false);
 
       const openWizard = (prefill) => {
         setWizardEdit(null);
@@ -1038,6 +1040,8 @@
         setWizardEmoji((prefill && prefill.emoji) || "\u{1F372}");
         setWizardNutrients(emptyNutrients());
         setWizardBarcode((prefill && prefill.barcode) || null);
+        setWizardReplaceId(null);
+        setWizardShowReplace(false);
         setWizardOpen(true);
       };
 
@@ -1047,6 +1051,8 @@
         setWizardEmoji(cf.emoji || "\u{1F372}");
         setWizardNutrients({ ...cf.nutrients });
         setWizardBarcode(cf.barcode || null);
+        setWizardReplaceId(null);
+        setWizardShowReplace(false);
         setWizardOpen(true);
       };
 
@@ -1057,9 +1063,41 @@
           }));
           showToast({ text: `Updated: ${wizardName.slice(0, Modules.CustomFoods.NAME_MAX)}` });
         } else {
+          const atCap = rankedFoods.length >= FOOD_CAP;
+          if (atCap && !wizardReplaceId) {
+            setWizardShowReplace(true);
+            if (leastUsedFood) setWizardReplaceId(leastUsedFood.id);
+            return;
+          }
           const cf = Modules.CustomFoods.buildCustomFood(wizardName, wizardEmoji, wizardNutrients, wizardBarcode);
-          setState((s) => Modules.CustomFoods.addCustomFood(s, cf));
-          showToast({ text: `Created: ${cf.name}` });
+          if (atCap && wizardReplaceId) {
+            const replacedItem = rankedFoods.find((f) => f.id === wizardReplaceId);
+            const replacedSnapshot = replacedItem ? { ...replacedItem } : null;
+            setState((s) => {
+              let next = s;
+              if (replacedItem && replacedItem._kind === "custom") {
+                next = Modules.CustomFoods.removeCustomFood(next, wizardReplaceId);
+              } else {
+                next = Modules.Templates.removeTemplate(next, wizardReplaceId);
+              }
+              return Modules.CustomFoods.addCustomFood(next, cf);
+            });
+            showToast({
+              text: `Created: ${cf.name} · replaced ${replacedSnapshot ? replacedSnapshot.emoji + " " + replacedSnapshot.name : "item"}`,
+              undo: replacedSnapshot ? () => {
+                setState((s) => {
+                  let next = Modules.CustomFoods.removeCustomFood(s, cf.id);
+                  if (replacedSnapshot._kind === "custom") {
+                    return Modules.CustomFoods.addCustomFood(next, replacedSnapshot);
+                  }
+                  return Modules.Templates.addTemplate(next, replacedSnapshot);
+                });
+              } : undefined,
+            });
+          } else {
+            setState((s) => Modules.CustomFoods.addCustomFood(s, cf));
+            showToast({ text: `Created: ${cf.name}` });
+          }
         }
         setWizardOpen(false);
       };
@@ -1119,11 +1157,42 @@
 
       const customFoods = state.customFoods || [];
 
+      // ── Usage ranking (derived from log history — no schema change) ────────
+      const FOOD_CAP = 17;
+      const usageIndex = useMemo(() => {
+        const counts = {};
+        const allLogs = (state.dayHistory || []).reduce((acc, h) => acc.concat(h.dayLog || []), []).concat(state.dayLog || []);
+        allLogs.forEach((e) => {
+          const key = e.recipeId || e.name;
+          if (!key) return;
+          if (!counts[key]) counts[key] = { count: 0, lastUsedAt: 0 };
+          counts[key].count += 1;
+          if (e.timestamp > counts[key].lastUsedAt) counts[key].lastUsedAt = e.timestamp;
+        });
+        return counts;
+      }, [state.dayHistory, state.dayLog]);
+
+      const rankedFoods = useMemo(() => {
+        const unified = mealItems.map((item) => {
+          const key = item.sourceRecipeId || item.id;
+          const u = usageIndex[key] || { count: 0, lastUsedAt: 0 };
+          return { ...item, _key: key, _count: u.count, _last: u.lastUsedAt, _kind: "template" };
+        }).concat(customFoods.map((cf) => {
+          const u = usageIndex[cf.name] || { count: 0, lastUsedAt: 0 };
+          return { ...cf, _key: cf.name, _count: u.count, _last: u.lastUsedAt, _kind: "custom" };
+        }));
+        unified.sort((a, b) => b._count - a._count || b._last - a._last || (a.name || "").localeCompare(b.name || ""));
+        return unified;
+      }, [mealItems, customFoods, usageIndex]);
+
+      const cappedFoods = useMemo(() => rankedFoods.slice(0, FOOD_CAP), [rankedFoods]);
+      const leastUsedFood = rankedFoods.length >= FOOD_CAP ? rankedFoods[rankedFoods.length - 1] : null;
+
       // ── Edit mode (jiggle) ─────────────────────────────────────────────────
       const [editMode, setEditMode] = useState(false);
       const [editorItem, setEditorItem] = useState(null);
 
-      // ── Filtered pills ─────────────────────────────────────────────────────
+      // ── Filtered items (search active = show all matches, no cap) ──────────
       const lowerQuery = query.toLowerCase().trim();
       const filteredMealItems = useMemo(() =>
         lowerQuery ? mealItems.filter(t => t.name.toLowerCase().includes(lowerQuery)) : mealItems,
@@ -1142,6 +1211,11 @@
         lowerQuery ? Modules.Catalog.searchIngredients(lowerQuery) : [],
         [lowerQuery]
       );
+
+      const filteredRankedFoods = useMemo(() => {
+        if (!lowerQuery) return null;
+        return rankedFoods.filter((f) => f.name.toLowerCase().includes(lowerQuery));
+      }, [rankedFoods, lowerQuery]);
 
       const CATEGORY_EMOJI = {
         protein: "\u{1F356}",
@@ -1618,16 +1692,58 @@
                   ))}
                 </div>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 p-5 sheet-bottom-fade">
-                <button
-                  onClick={saveWizard}
-                  disabled={!wizardName.trim()}
-                  data-testid="cf-save"
-                  className="w-full pill-active rounded-full py-3.5 text-white font-semibold font-headline text-sm disabled:opacity-40 transition"
-                >
-                  {wizardEdit ? "Update Food" : "Create Food"}
-                </button>
-              </div>
+              {/* Replace listbox (shown when at cap and creating new) */}
+              {wizardShowReplace && !wizardEdit && (
+                <div className="absolute inset-0 z-10 bg-surface-container dark:bg-[#0a0a0a] flex flex-col animate-fade-in">
+                  <div className="flex justify-center pt-3 pb-1">
+                    <div className="w-10 h-1 rounded-full bg-on-surface/20" />
+                  </div>
+                  <div className="flex items-center justify-between px-5 pb-3">
+                    <h2 className="font-headline text-lg font-bold">Replace a food</h2>
+                    <button onClick={() => setWizardShowReplace(false)} className="p-1 hover:bg-on-surface/10 rounded-full transition">
+                      <Icon name="arrow_back" size={22} />
+                    </button>
+                  </div>
+                  <p className="px-5 pb-3 text-xs text-on-surface-variant">You have {FOOD_CAP} foods. Choose one to replace:</p>
+                  <div className="flex-1 overflow-y-auto px-5 pb-24" data-testid="replace-listbox">
+                    {[...rankedFoods].reverse().map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => setWizardReplaceId(f.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all ${
+                          wizardReplaceId === f.id ? "bg-primary/10 border border-primary/40" : "hover:bg-on-surface/5"
+                        }`}
+                      >
+                        <span className="text-xl">{f.emoji || "\u{1F372}"}</span>
+                        <span className="flex-1 text-left text-sm font-label truncate">{f.name}</span>
+                        <span className="text-xs text-on-surface-variant/60">{f._count || 0} uses</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-5 sheet-bottom-fade">
+                    <button
+                      onClick={saveWizard}
+                      disabled={!wizardName.trim() || !wizardReplaceId}
+                      data-testid="cf-save"
+                      className="w-full pill-active rounded-full py-3.5 text-white font-semibold font-headline text-sm disabled:opacity-40 transition"
+                    >
+                      {(() => { const r = rankedFoods.find((f) => f.id === wizardReplaceId); return r ? `Create food · replaces ${r.emoji} ${r.name}` : "Select a food to replace"; })()}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {!wizardShowReplace && (
+                <div className="absolute bottom-0 left-0 right-0 p-5 sheet-bottom-fade">
+                  <button
+                    onClick={saveWizard}
+                    disabled={!wizardName.trim()}
+                    data-testid="cf-save"
+                    className="w-full pill-active rounded-full py-3.5 text-white font-semibold font-headline text-sm disabled:opacity-40 transition"
+                  >
+                    {wizardEdit ? "Update Food" : "Create Food"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -1649,13 +1765,18 @@
             </div>
             {/* Header */}
             <div className="flex items-center justify-between px-5 pb-3">
-              <h2 className="font-headline text-lg font-bold">Log Entry</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-headline text-lg font-bold">Log Entry</h2>
+                {tab === "meals" && !lowerQuery && (
+                  <span className="text-xs text-on-surface-variant/60 font-label">{Math.min(rankedFoods.length, FOOD_CAP)} / {FOOD_CAP} foods</span>
+                )}
+              </div>
               <button onClick={handleClose} className="p-1 hover:bg-on-surface/10 rounded-full transition">
                 <Icon name="close" size={22} />
               </button>
             </div>
 
-            {/* Search + Scan bar */}
+            {/* Search + Enter-to-log + Scan bar */}
             <div className="px-5 pb-3 flex gap-2">
               <div className="flex-1 relative">
                 <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50" />
@@ -1664,10 +1785,35 @@
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && lowerQuery) {
+                      const match = filteredRankedFoods && filteredRankedFoods[0];
+                      if (match) {
+                        if (match._kind === "custom") toggleCustomFood(match.id);
+                        else handleLogItem(match);
+                      }
+                    }
+                  }}
                   placeholder="Search meals, templates, foods…"
                   data-testid="log-search"
-                  className="w-full liquid-glass rounded-xl pl-9 pr-4 py-2.5 text-sm placeholder:text-on-surface-variant/40"
+                  className="w-full liquid-glass rounded-xl pl-9 pr-10 py-2.5 text-sm placeholder:text-on-surface-variant/40"
                 />
+                {lowerQuery && (
+                  <button
+                    onClick={() => {
+                      const match = filteredRankedFoods && filteredRankedFoods[0];
+                      if (match) {
+                        if (match._kind === "custom") toggleCustomFood(match.id);
+                        else handleLogItem(match);
+                      }
+                    }}
+                    data-testid="log-submit"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full pill-active text-white"
+                    aria-label="Log first match"
+                  >
+                    <Icon name="keyboard_return" size={16} />
+                  </button>
+                )}
               </div>
               {scannerSupported && (
                 <button
@@ -1679,14 +1825,6 @@
                   <Icon name="qr_code_scanner" size={20} />
                 </button>
               )}
-              <button
-                onClick={() => openWizard({})}
-                data-testid="new-custom-food"
-                className="liquid-glass rounded-xl px-3 flex items-center justify-center"
-                aria-label="New custom food"
-              >
-                <Icon name="add" size={20} />
-              </button>
             </div>
 
             {/* Segmented Tabs */}
@@ -1704,10 +1842,188 @@
               </div>
             </div>
 
-            {/* Content */}
-            <div className={`flex-1 overflow-y-auto px-5 pb-24 space-y-4${editMode ? "" : ""}`}>
-              {/* Edit / Done toggle + hint */}
-              <div className="flex items-center justify-between">
+            {/* Content — bounded 3×3 entry grid */}
+            <div className="flex-1 flex flex-col overflow-hidden px-5 pb-24" data-testid="entry-grid" style={{ height: `calc(80vh - ${kbOffset}px)` }}>
+              <div className="flex-1 overflow-y-auto">
+                {tab === "meals" && !lowerQuery && (
+                  <div className="grid grid-cols-3 gap-2 auto-rows-fr" role="group" aria-label="Food grid" data-testid="meal-pills">
+                    {/* Cell 1: New / edit food */}
+                    <button
+                      onClick={() => openWizard({})}
+                      data-testid="new-custom-food"
+                      aria-label="New or edit food"
+                      className="entry-grid-cell liquid-glass-light rounded-2xl flex flex-col items-center justify-center gap-1 border-2 border-dashed border-on-surface/20 hover:border-on-surface/40 transition-all"
+                    >
+                      <Icon name="add" size={28} className="text-on-surface-variant/60" />
+                      <span className="text-xs text-on-surface-variant/60 font-label">New food</span>
+                    </button>
+                    {/* Cells 2–18: ranked foods (thumb zone = bottom rows) */}
+                    {cappedFoods.map((item, idx) => {
+                      const rid = item.sourceRecipeId || item.id;
+                      const isSelected = item._kind === "custom" ? !!selectedCustomFoods[item.id] : selectedRecipes.includes(rid);
+                      const isDegraded = item._kind === "template" && !item.nutrients && Array.isArray(item.refs) && item.refs.length > 0
+                        && item.refs.some(r => !allRecipes[r.recipeId]);
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            if (isDegraded) return;
+                            if (editMode) { item._kind === "custom" ? openWizardEdit(item) : setEditorItem(item); return; }
+                            if (item._kind === "custom") { if (!longPressFired.current) toggleCustomFood(item.id); }
+                            else handleLogItem(item);
+                          }}
+                          onPointerDown={() => item._kind === "custom" && !editMode && startLongPress(item)}
+                          onPointerUp={cancelLongPress}
+                          onPointerLeave={cancelLongPress}
+                          disabled={isDegraded}
+                          aria-label={`${item.emoji || CATEGORY_EMOJI[item.category] || "\u{1F372}"} ${item.name}`}
+                          aria-pressed={isSelected}
+                          aria-selected={isSelected}
+                          aria-setsize={Math.min(rankedFoods.length, FOOD_CAP)}
+                          aria-posinset={idx + 1}
+                          data-testid={item._kind === "custom" ? "custom-food-chip" : "item-chip"}
+                          data-item-id={item.id}
+                          data-cf-id={item._kind === "custom" ? item.id : undefined}
+                          data-degraded={isDegraded || undefined}
+                          className={`entry-grid-cell liquid-glass-light rounded-2xl flex flex-col items-center justify-center gap-0.5 relative transition-all ${
+                            isDegraded ? "opacity-50 cursor-not-allowed" :
+                            editMode ? "animate-jiggle" :
+                            isSelected ? "border-2 border-primary/40 bg-primary/10" : ""
+                          }`}
+                        >
+                          {editMode && !isDegraded && (
+                            <span
+                              className="delete-badge"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id, item.name); }}
+                            >-</span>
+                          )}
+                          <span className="text-2xl leading-none">{item.emoji || CATEGORY_EMOJI[item.category] || "\u{1F372}"}</span>
+                          <span className="entry-grid-label text-on-surface-variant">{item.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Search results (no cap, scrollable) */}
+                {tab === "meals" && lowerQuery && (
+                  <>
+                    <div className="grid grid-cols-3 gap-2 auto-rows-fr" data-testid="meal-pills">
+                      {(filteredRankedFoods || []).map((item) => {
+                        const rid = item.sourceRecipeId || item.id;
+                        const isSelected = item._kind === "custom" ? !!selectedCustomFoods[item.id] : selectedRecipes.includes(rid);
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              if (editMode) { item._kind === "custom" ? openWizardEdit(item) : setEditorItem(item); return; }
+                              if (item._kind === "custom") { if (!longPressFired.current) toggleCustomFood(item.id); }
+                              else handleLogItem(item);
+                            }}
+                            aria-label={`${item.emoji || CATEGORY_EMOJI[item.category] || "\u{1F372}"} ${item.name}`}
+                            aria-pressed={isSelected}
+                            aria-selected={isSelected}
+                            data-testid={item._kind === "custom" ? "custom-food-chip" : "item-chip"}
+                            data-item-id={item.id}
+                            data-cf-id={item._kind === "custom" ? item.id : undefined}
+                            className={`entry-grid-cell liquid-glass-light rounded-2xl flex flex-col items-center justify-center gap-0.5 relative transition-all ${
+                              editMode ? "animate-jiggle" :
+                              isSelected ? "border-2 border-primary/40 bg-primary/10" : ""
+                            }`}
+                          >
+                            <span className="text-2xl leading-none">{item.emoji || CATEGORY_EMOJI[item.category] || "\u{1F372}"}</span>
+                            <span className="entry-grid-label text-on-surface-variant">{item.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {filteredIngredients.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <h3 className="font-headline text-sm font-semibold text-on-surface-variant">Foods</h3>
+                        <div className="grid grid-cols-3 gap-2 auto-rows-fr" data-testid="ingredient-pills">
+                          {filteredIngredients.map((ing) => (
+                            <button
+                              key={ing.id}
+                              onClick={() => toggleIngredient(ing.id)}
+                              data-testid={`ingredient-pill-${ing.id}`}
+                              data-ing-id={ing.id}
+                              aria-pressed={!!selectedIngredients[ing.id]}
+                              className={`entry-grid-cell liquid-glass-light rounded-2xl flex flex-col items-center justify-center gap-0.5 transition-all ${
+                                selectedIngredients[ing.id] ? "border-2 border-primary/40 bg-primary/10" : ""
+                              }`}
+                            >
+                              <span className="text-2xl leading-none">{CATEGORY_EMOJI[ing.category] || "\u{1F37D}"}</span>
+                              <span className="entry-grid-label text-on-surface-variant">{ing.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {tab === "supplements" && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-2 auto-rows-fr" data-testid="supp-pills">
+                      {(lowerQuery ? filteredSuppItems : filteredSuppItems.slice(0, 17)).map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => editMode ? setEditorItem(item) : handleLogItem(item)}
+                          aria-label={`${item.emoji} ${item.name}`}
+                          data-testid="item-chip"
+                          data-item-id={item.id}
+                          className={`entry-grid-cell liquid-glass-light rounded-2xl flex flex-col items-center justify-center gap-0.5 relative transition-all ${
+                            editMode ? "animate-jiggle" :
+                            checkedSupps[item.id] ? "border-2 border-primary/40 bg-primary/10" : ""
+                          }`}
+                        >
+                          {editMode && (
+                            <span
+                              className="delete-badge"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id, item.name); }}
+                            >-</span>
+                          )}
+                          <span className="text-2xl leading-none">{item.emoji}</span>
+                          <span className="entry-grid-label text-on-surface-variant">{item.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {!editMode && <ClosingGaps suppItems={suppItems} checkedSupps={checkedSupps} onToggle={toggleSuppById} />}
+                  </div>
+                )}
+
+                {/* Create Template */}
+                {canCreate && (
+                  creatingName === null ? (
+                    <button
+                      onClick={() => setCreatingName("")}
+                      data-testid="create-template"
+                      className="w-full mt-3 rounded-full py-2.5 text-sm font-label border border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20 transition flex items-center justify-center gap-1.5"
+                    >
+                      <Icon name="bookmark_add" size={18} /> Create Template
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 mt-3">
+                      <input
+                        type="text"
+                        autoFocus
+                        maxLength={Modules.Templates.NAME_MAX}
+                        value={creatingName}
+                        onChange={(e) => setCreatingName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && saveTemplate()}
+                        placeholder="Template name"
+                        data-testid="template-name-input"
+                        className="flex-1 bg-on-surface/5 rounded-full px-4 py-2.5 text-sm placeholder:text-on-surface-variant/40"
+                      />
+                      <button onClick={saveTemplate} data-testid="template-save" className="px-4 py-2.5 rounded-full pill-active text-white text-sm font-semibold">Save</button>
+                      <button onClick={() => setCreatingName(null)} className="p-2 text-on-surface-variant" aria-label="Cancel"><Icon name="close" size={18} /></button>
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Edit/Done footer button */}
+              <div className="flex items-center justify-between py-2 mt-1">
                 <button
                   onClick={() => { setEditMode(!editMode); if (editMode) setEditorItem(null); }}
                   data-testid="edit-toggle"
@@ -1718,163 +2034,9 @@
                   {editMode ? "Done" : <><Icon name="edit" size={14} className="inline -mt-0.5 mr-1" />Edit</>}
                 </button>
                 <span className="text-xs text-on-surface-variant">
-                  {editMode ? "Tap chip to edit" : "Tap to log"}
+                  {editMode ? "Tap cell to edit" : "Tap to log"}
                 </span>
               </div>
-
-              {/* Unified pill grid */}
-              {tab === "meals" && (
-                <>
-                  <div className="flex flex-wrap gap-2" data-testid="meal-pills">
-                    {(lowerQuery ? filteredMealItems : filteredMealItems.slice(0, 6)).map((item) => {
-                      const rid = item.sourceRecipeId || item.id;
-                      const isSelected = selectedRecipes.includes(rid);
-                      const isDegraded = !item.nutrients && Array.isArray(item.refs) && item.refs.length > 0
-                        && item.refs.some(r => !allRecipes[r.recipeId]);
-                      return (
-                      <button
-                        key={item.id}
-                        onClick={() => isDegraded ? null : (editMode ? setEditorItem(item) : handleLogItem(item))}
-                        disabled={isDegraded}
-                        aria-pressed={isSelected}
-                        data-testid="item-chip"
-                        data-item-id={item.id}
-                        data-degraded={isDegraded || undefined}
-                        className={`px-4 py-2 rounded-full text-sm font-label transition-all border ${
-                          isDegraded ? "border-on-surface/10 bg-on-surface/5 text-on-surface-variant/40 opacity-50 cursor-not-allowed" :
-                          editMode ? "animate-jiggle border-on-surface/10 bg-on-surface/5 text-on-surface-variant" :
-                          isSelected
-                            ? "border-primary/40 bg-primary/10 text-white"
-                            : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"
-                        }`}
-                      >
-                        {editMode && !isDegraded && (
-                          <span
-                            className="delete-badge"
-                            onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id, item.name); }}
-                          >-</span>
-                        )}
-                        {item.emoji} {item.name}
-                      </button>
-                    );
-                    })}
-                  </div>
-
-                  {/* Custom food pills */}
-                  {!editMode && filteredCustomFoods.length > 0 && (
-                    <div className="space-y-2">
-                      <h3 className="font-headline text-sm font-semibold text-on-surface-variant">Custom Foods</h3>
-                      <div className="flex flex-wrap gap-2" data-testid="custom-food-pills">
-                        {filteredCustomFoods.map((cf) => (
-                          <button
-                            key={cf.id}
-                            onClick={() => { if (!longPressFired.current) toggleCustomFood(cf.id); }}
-                            onPointerDown={() => !editMode && startLongPress(cf)}
-                            onPointerUp={cancelLongPress}
-                            onPointerLeave={cancelLongPress}
-                            data-testid="custom-food-chip"
-                            data-cf-id={cf.id}
-                            aria-pressed={!!selectedCustomFoods[cf.id]}
-                            className={`px-4 py-2 rounded-full text-sm font-label transition-all border ${
-                              selectedCustomFoods[cf.id]
-                                ? "border-primary/40 bg-primary/10 text-white"
-                                : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"
-                            }`}
-                          >
-                            {cf.emoji} {cf.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Catalog ingredient pills */}
-                  {!editMode && filteredIngredients.length > 0 && (
-                    <div className="space-y-2">
-                      <h3 className="font-headline text-sm font-semibold text-on-surface-variant">Foods</h3>
-                      <div className="flex flex-wrap gap-2" data-testid="ingredient-pills">
-                        {filteredIngredients.map((ing) => (
-                          <button
-                            key={ing.id}
-                            onClick={() => toggleIngredient(ing.id)}
-                            data-testid={`ingredient-pill-${ing.id}`}
-                            data-ing-id={ing.id}
-                            aria-pressed={!!selectedIngredients[ing.id]}
-                            className={`px-4 py-2 rounded-full text-sm font-label transition-all border ${
-                              selectedIngredients[ing.id]
-                                ? "border-primary/40 bg-primary/10 text-white"
-                                : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"
-                            }`}
-                          >
-                            {CATEGORY_EMOJI[ing.category] || "\u{1F37D}"} {ing.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {tab === "supplements" && (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap gap-2" data-testid="supp-pills">
-                    {(lowerQuery ? filteredSuppItems : filteredSuppItems.slice(0, 6)).map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => editMode ? setEditorItem(item) : handleLogItem(item)}
-                        data-testid="item-chip"
-                        data-item-id={item.id}
-                        className={`px-4 py-2 rounded-full text-sm font-label transition-all border ${
-                          editMode ? "animate-jiggle border-on-surface/10 bg-on-surface/5 text-on-surface-variant" :
-                          checkedSupps[item.id]
-                            ? "border-primary/40 bg-primary/10 text-white"
-                            : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"
-                        }`}
-                      >
-                        {editMode && (
-                          <span
-                            className="delete-badge"
-                            onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id, item.name); }}
-                          >-</span>
-                        )}
-                        {item.emoji} {item.name}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Closing Gaps */}
-                  {!editMode && <ClosingGaps suppItems={suppItems} checkedSupps={checkedSupps} onToggle={toggleSuppById} />}
-                </div>
-              )}
-
-              {/* Create Template */}
-              {canCreate && (
-                creatingName === null ? (
-                  <button
-                    onClick={() => setCreatingName("")}
-                    data-testid="create-template"
-                    className="w-full rounded-full py-2.5 text-sm font-label border border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20 transition flex items-center justify-center gap-1.5"
-                  >
-                    <Icon name="bookmark_add" size={18} /> Create Template
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      autoFocus
-                      maxLength={Modules.Templates.NAME_MAX}
-                      value={creatingName}
-                      onChange={(e) => setCreatingName(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && saveTemplate()}
-                      placeholder="Template name"
-                      data-testid="template-name-input"
-                      className="flex-1 bg-on-surface/5 rounded-full px-4 py-2.5 text-sm placeholder:text-on-surface-variant/40"
-                    />
-                    <button onClick={saveTemplate} data-testid="template-save" className="px-4 py-2.5 rounded-full pill-active text-white text-sm font-semibold">Save</button>
-                    <button onClick={() => setCreatingName(null)} className="p-2 text-on-surface-variant" aria-label="Cancel"><Icon name="close" size={18} /></button>
-                  </div>
-                )
-              )}
             </div>
 
             {/* Confirm CTA */}

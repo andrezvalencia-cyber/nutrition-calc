@@ -1,4 +1,4 @@
-const { defineConfig } = require('@playwright/test');
+const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
   testDir: './tests',
@@ -11,8 +11,19 @@ module.exports = defineConfig({
     baseURL: 'http://localhost:8765',
     headless: true,
   },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+      testMatch: '**/visual-consistency.test.js',
+    },
+  ],
   webServer: {
-    command: 'python3 -m http.server 8765',
+    command: 'npx serve -p 8765 -s',
     port: 8765,
     reuseExistingServer: true,
     timeout: 10000,

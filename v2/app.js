@@ -1251,12 +1251,16 @@ function LogDaySheet({
   const [wizardEmoji, setWizardEmoji] = useState("\u{1F372}");
   const [wizardNutrients, setWizardNutrients] = useState(() => emptyNutrients());
   const [wizardBarcode, setWizardBarcode] = useState(null);
+  const [wizardReplaceId, setWizardReplaceId] = useState(null);
+  const [wizardShowReplace, setWizardShowReplace] = useState(false);
   const openWizard = prefill => {
     setWizardEdit(null);
     setWizardName(prefill && prefill.name || "");
     setWizardEmoji(prefill && prefill.emoji || "\u{1F372}");
     setWizardNutrients(emptyNutrients());
     setWizardBarcode(prefill && prefill.barcode || null);
+    setWizardReplaceId(null);
+    setWizardShowReplace(false);
     setWizardOpen(true);
   };
   const openWizardEdit = cf => {
@@ -1267,6 +1271,8 @@ function LogDaySheet({
       ...cf.nutrients
     });
     setWizardBarcode(cf.barcode || null);
+    setWizardReplaceId(null);
+    setWizardShowReplace(false);
     setWizardOpen(true);
   };
   const saveWizard = () => {
@@ -1281,11 +1287,45 @@ function LogDaySheet({
         text: `Updated: ${wizardName.slice(0, Modules.CustomFoods.NAME_MAX)}`
       });
     } else {
+      const atCap = rankedFoods.length >= FOOD_CAP;
+      if (atCap && !wizardReplaceId) {
+        setWizardShowReplace(true);
+        if (leastUsedFood) setWizardReplaceId(leastUsedFood.id);
+        return;
+      }
       const cf = Modules.CustomFoods.buildCustomFood(wizardName, wizardEmoji, wizardNutrients, wizardBarcode);
-      setState(s => Modules.CustomFoods.addCustomFood(s, cf));
-      showToast({
-        text: `Created: ${cf.name}`
-      });
+      if (atCap && wizardReplaceId) {
+        const replacedItem = rankedFoods.find(f => f.id === wizardReplaceId);
+        const replacedSnapshot = replacedItem ? {
+          ...replacedItem
+        } : null;
+        setState(s => {
+          let next = s;
+          if (replacedItem && replacedItem._kind === "custom") {
+            next = Modules.CustomFoods.removeCustomFood(next, wizardReplaceId);
+          } else {
+            next = Modules.Templates.removeTemplate(next, wizardReplaceId);
+          }
+          return Modules.CustomFoods.addCustomFood(next, cf);
+        });
+        showToast({
+          text: `Created: ${cf.name} · replaced ${replacedSnapshot ? replacedSnapshot.emoji + " " + replacedSnapshot.name : "item"}`,
+          undo: replacedSnapshot ? () => {
+            setState(s => {
+              let next = Modules.CustomFoods.removeCustomFood(s, cf.id);
+              if (replacedSnapshot._kind === "custom") {
+                return Modules.CustomFoods.addCustomFood(next, replacedSnapshot);
+              }
+              return Modules.Templates.addTemplate(next, replacedSnapshot);
+            });
+          } : undefined
+        });
+      } else {
+        setState(s => Modules.CustomFoods.addCustomFood(s, cf));
+        showToast({
+          text: `Created: ${cf.name}`
+        });
+      }
     }
     setWizardOpen(false);
   };
@@ -1337,16 +1377,70 @@ function LogDaySheet({
   const suppItems = useMemo(() => allTemplates.filter(t => t.type === "supplement"), [allTemplates]);
   const customFoods = state.customFoods || [];
 
+  // ── Usage ranking (derived from log history — no schema change) ────────
+  const FOOD_CAP = 17;
+  const usageIndex = useMemo(() => {
+    const counts = {};
+    const allLogs = (state.dayHistory || []).reduce((acc, h) => acc.concat(h.dayLog || []), []).concat(state.dayLog || []);
+    allLogs.forEach(e => {
+      const key = e.recipeId || e.name;
+      if (!key) return;
+      if (!counts[key]) counts[key] = {
+        count: 0,
+        lastUsedAt: 0
+      };
+      counts[key].count += 1;
+      if (e.timestamp > counts[key].lastUsedAt) counts[key].lastUsedAt = e.timestamp;
+    });
+    return counts;
+  }, [state.dayHistory, state.dayLog]);
+  const rankedFoods = useMemo(() => {
+    const unified = mealItems.map(item => {
+      const key = item.sourceRecipeId || item.id;
+      const u = usageIndex[key] || {
+        count: 0,
+        lastUsedAt: 0
+      };
+      return {
+        ...item,
+        _key: key,
+        _count: u.count,
+        _last: u.lastUsedAt,
+        _kind: "template"
+      };
+    }).concat(customFoods.map(cf => {
+      const u = usageIndex[cf.name] || {
+        count: 0,
+        lastUsedAt: 0
+      };
+      return {
+        ...cf,
+        _key: cf.name,
+        _count: u.count,
+        _last: u.lastUsedAt,
+        _kind: "custom"
+      };
+    }));
+    unified.sort((a, b) => b._count - a._count || b._last - a._last || (a.name || "").localeCompare(b.name || ""));
+    return unified;
+  }, [mealItems, customFoods, usageIndex]);
+  const cappedFoods = useMemo(() => rankedFoods.slice(0, FOOD_CAP), [rankedFoods]);
+  const leastUsedFood = rankedFoods.length >= FOOD_CAP ? rankedFoods[rankedFoods.length - 1] : null;
+
   // ── Edit mode (jiggle) ─────────────────────────────────────────────────
   const [editMode, setEditMode] = useState(false);
   const [editorItem, setEditorItem] = useState(null);
 
-  // ── Filtered pills ─────────────────────────────────────────────────────
+  // ── Filtered items (search active = show all matches, no cap) ──────────
   const lowerQuery = query.toLowerCase().trim();
   const filteredMealItems = useMemo(() => lowerQuery ? mealItems.filter(t => t.name.toLowerCase().includes(lowerQuery)) : mealItems, [mealItems, lowerQuery]);
   const filteredSuppItems = useMemo(() => lowerQuery ? suppItems.filter(t => t.name.toLowerCase().includes(lowerQuery)) : suppItems, [suppItems, lowerQuery]);
   const filteredCustomFoods = useMemo(() => lowerQuery ? customFoods.filter(cf => cf.name.toLowerCase().includes(lowerQuery)) : customFoods, [customFoods, lowerQuery]);
   const filteredIngredients = useMemo(() => lowerQuery ? Modules.Catalog.searchIngredients(lowerQuery) : [], [lowerQuery]);
+  const filteredRankedFoods = useMemo(() => {
+    if (!lowerQuery) return null;
+    return rankedFoods.filter(f => f.name.toLowerCase().includes(lowerQuery));
+  }, [rankedFoods, lowerQuery]);
   const CATEGORY_EMOJI = {
     protein: "\u{1F356}",
     grain: "\u{1F33E}",
@@ -1902,7 +1996,48 @@ function LogDaySheet({
       className: "w-16 bg-transparent text-right text-sm font-semibold"
     }), /*#__PURE__*/React.createElement("span", {
       className: "text-xs text-on-surface-variant/60 w-8"
-    }, NUTRIENT_UNITS[k]))))), /*#__PURE__*/React.createElement("div", {
+    }, NUTRIENT_UNITS[k]))))), wizardShowReplace && !wizardEdit && /*#__PURE__*/React.createElement("div", {
+      className: "absolute inset-0 z-10 bg-surface-container dark:bg-[#0a0a0a] flex flex-col animate-fade-in"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex justify-center pt-3 pb-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-10 h-1 rounded-full bg-on-surface/20"
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-between px-5 pb-3"
+    }, /*#__PURE__*/React.createElement("h2", {
+      className: "font-headline text-lg font-bold"
+    }, "Replace a food"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => setWizardShowReplace(false),
+      className: "p-1 hover:bg-on-surface/10 rounded-full transition"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "arrow_back",
+      size: 22
+    }))), /*#__PURE__*/React.createElement("p", {
+      className: "px-5 pb-3 text-xs text-on-surface-variant"
+    }, "You have ", FOOD_CAP, " foods. Choose one to replace:"), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 overflow-y-auto px-5 pb-24",
+      "data-testid": "replace-listbox"
+    }, [...rankedFoods].reverse().map(f => /*#__PURE__*/React.createElement("button", {
+      key: f.id,
+      onClick: () => setWizardReplaceId(f.id),
+      className: `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all ${wizardReplaceId === f.id ? "bg-primary/10 border border-primary/40" : "hover:bg-on-surface/5"}`
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-xl"
+    }, f.emoji || "\u{1F372}"), /*#__PURE__*/React.createElement("span", {
+      className: "flex-1 text-left text-sm font-label truncate"
+    }, f.name), /*#__PURE__*/React.createElement("span", {
+      className: "text-xs text-on-surface-variant/60"
+    }, f._count || 0, " uses")))), /*#__PURE__*/React.createElement("div", {
+      className: "absolute bottom-0 left-0 right-0 p-5 sheet-bottom-fade"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: saveWizard,
+      disabled: !wizardName.trim() || !wizardReplaceId,
+      "data-testid": "cf-save",
+      className: "w-full pill-active rounded-full py-3.5 text-white font-semibold font-headline text-sm disabled:opacity-40 transition"
+    }, (() => {
+      const r = rankedFoods.find(f => f.id === wizardReplaceId);
+      return r ? `Create food · replaces ${r.emoji} ${r.name}` : "Select a food to replace";
+    })()))), !wizardShowReplace && /*#__PURE__*/React.createElement("div", {
       className: "absolute bottom-0 left-0 right-0 p-5 sheet-bottom-fade"
     }, /*#__PURE__*/React.createElement("button", {
       onClick: saveWizard,
@@ -1935,9 +2070,13 @@ function LogDaySheet({
     className: "w-10 h-1 rounded-full bg-on-surface/20"
   })), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between px-5 pb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "font-headline text-lg font-bold"
-  }, "Log Entry"), /*#__PURE__*/React.createElement("button", {
+  }, "Log Entry"), tab === "meals" && !lowerQuery && /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-on-surface-variant/60 font-label"
+  }, Math.min(rankedFoods.length, FOOD_CAP), " / ", FOOD_CAP, " foods")), /*#__PURE__*/React.createElement("button", {
     onClick: handleClose,
     className: "p-1 hover:bg-on-surface/10 rounded-full transition"
   }, /*#__PURE__*/React.createElement(Icon, {
@@ -1956,24 +2095,37 @@ function LogDaySheet({
     type: "text",
     value: query,
     onChange: e => setQuery(e.target.value),
+    onKeyDown: e => {
+      if (e.key === "Enter" && lowerQuery) {
+        const match = filteredRankedFoods && filteredRankedFoods[0];
+        if (match) {
+          if (match._kind === "custom") toggleCustomFood(match.id);else handleLogItem(match);
+        }
+      }
+    },
     placeholder: "Search meals, templates, foods\u2026",
     "data-testid": "log-search",
-    className: "w-full liquid-glass rounded-xl pl-9 pr-4 py-2.5 text-sm placeholder:text-on-surface-variant/40"
-  })), scannerSupported && /*#__PURE__*/React.createElement("button", {
+    className: "w-full liquid-glass rounded-xl pl-9 pr-10 py-2.5 text-sm placeholder:text-on-surface-variant/40"
+  }), lowerQuery && /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      const match = filteredRankedFoods && filteredRankedFoods[0];
+      if (match) {
+        if (match._kind === "custom") toggleCustomFood(match.id);else handleLogItem(match);
+      }
+    },
+    "data-testid": "log-submit",
+    className: "absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full pill-active text-white",
+    "aria-label": "Log first match"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "keyboard_return",
+    size: 16
+  }))), scannerSupported && /*#__PURE__*/React.createElement("button", {
     onClick: () => setShowScanner(true),
     "data-testid": "scan-trigger",
     className: "liquid-glass rounded-xl px-3 flex items-center justify-center",
     "aria-label": "Scan barcode"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "qr_code_scanner",
-    size: 20
-  })), /*#__PURE__*/React.createElement("button", {
-    onClick: () => openWizard({}),
-    "data-testid": "new-custom-food",
-    className: "liquid-glass rounded-xl px-3 flex items-center justify-center",
-    "aria-label": "New custom food"
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "add",
     size: 20
   }))), /*#__PURE__*/React.createElement("div", {
     className: "px-5 pb-4"
@@ -1984,70 +2136,105 @@ function LogDaySheet({
     onClick: () => setTab(t),
     className: `flex-1 py-2 rounded-full text-sm font-semibold font-label transition-all ${tab === t ? "pill-active text-white" : "text-on-surface-variant"}`
   }, t === "meals" ? "Meals" : "Supplements")))), /*#__PURE__*/React.createElement("div", {
-    className: `flex-1 overflow-y-auto px-5 pb-24 space-y-4${editMode ? "" : ""}`
+    className: "flex-1 flex flex-col overflow-hidden px-5 pb-24",
+    "data-testid": "entry-grid",
+    style: {
+      height: `calc(80vh - ${kbOffset}px)`
+    }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center justify-between"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => {
-      setEditMode(!editMode);
-      if (editMode) setEditorItem(null);
-    },
-    "data-testid": "edit-toggle",
-    className: `text-sm font-semibold font-label px-3 py-1 rounded-lg transition-all ${editMode ? "bg-primary/15 text-primary-fixed-dim" : "text-primary-fixed-dim"}`
-  }, editMode ? "Done" : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Icon, {
-    name: "edit",
-    size: 14,
-    className: "inline -mt-0.5 mr-1"
-  }), "Edit")), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-on-surface-variant"
-  }, editMode ? "Tap chip to edit" : "Tap to log")), tab === "meals" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2",
+    className: "flex-1 overflow-y-auto"
+  }, tab === "meals" && !lowerQuery && /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-2 auto-rows-fr",
+    role: "group",
+    "aria-label": "Food grid",
     "data-testid": "meal-pills"
-  }, (lowerQuery ? filteredMealItems : filteredMealItems.slice(0, 6)).map(item => {
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => openWizard({}),
+    "data-testid": "new-custom-food",
+    "aria-label": "New or edit food",
+    className: "entry-grid-cell liquid-glass-light rounded-2xl flex flex-col items-center justify-center gap-1 border-2 border-dashed border-on-surface/20 hover:border-on-surface/40 transition-all"
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "add",
+    size: 28,
+    className: "text-on-surface-variant/60"
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-on-surface-variant/60 font-label"
+  }, "New food")), cappedFoods.map((item, idx) => {
     const rid = item.sourceRecipeId || item.id;
-    const isSelected = selectedRecipes.includes(rid);
-    const isDegraded = !item.nutrients && Array.isArray(item.refs) && item.refs.length > 0 && item.refs.some(r => !allRecipes[r.recipeId]);
+    const isSelected = item._kind === "custom" ? !!selectedCustomFoods[item.id] : selectedRecipes.includes(rid);
+    const isDegraded = item._kind === "template" && !item.nutrients && Array.isArray(item.refs) && item.refs.length > 0 && item.refs.some(r => !allRecipes[r.recipeId]);
     return /*#__PURE__*/React.createElement("button", {
       key: item.id,
-      onClick: () => isDegraded ? null : editMode ? setEditorItem(item) : handleLogItem(item),
+      onClick: () => {
+        if (isDegraded) return;
+        if (editMode) {
+          item._kind === "custom" ? openWizardEdit(item) : setEditorItem(item);
+          return;
+        }
+        if (item._kind === "custom") {
+          if (!longPressFired.current) toggleCustomFood(item.id);
+        } else handleLogItem(item);
+      },
+      onPointerDown: () => item._kind === "custom" && !editMode && startLongPress(item),
+      onPointerUp: cancelLongPress,
+      onPointerLeave: cancelLongPress,
       disabled: isDegraded,
+      "aria-label": `${item.emoji || CATEGORY_EMOJI[item.category] || "\u{1F372}"} ${item.name}`,
       "aria-pressed": isSelected,
-      "data-testid": "item-chip",
+      "aria-selected": isSelected,
+      "aria-setsize": Math.min(rankedFoods.length, FOOD_CAP),
+      "aria-posinset": idx + 1,
+      "data-testid": item._kind === "custom" ? "custom-food-chip" : "item-chip",
       "data-item-id": item.id,
+      "data-cf-id": item._kind === "custom" ? item.id : undefined,
       "data-degraded": isDegraded || undefined,
-      className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${isDegraded ? "border-on-surface/10 bg-on-surface/5 text-on-surface-variant/40 opacity-50 cursor-not-allowed" : editMode ? "animate-jiggle border-on-surface/10 bg-on-surface/5 text-on-surface-variant" : isSelected ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
+      className: `entry-grid-cell liquid-glass-light rounded-2xl flex flex-col items-center justify-center gap-0.5 relative transition-all ${isDegraded ? "opacity-50 cursor-not-allowed" : editMode ? "animate-jiggle" : isSelected ? "border-2 border-primary/40 bg-primary/10" : ""}`
     }, editMode && !isDegraded && /*#__PURE__*/React.createElement("span", {
       className: "delete-badge",
       onClick: e => {
         e.stopPropagation();
         handleDeleteItem(item.id, item.name);
       }
-    }, "-"), item.emoji, " ", item.name);
-  })), !editMode && filteredCustomFoods.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-headline text-sm font-semibold text-on-surface-variant"
-  }, "Custom Foods"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2",
-    "data-testid": "custom-food-pills"
-  }, filteredCustomFoods.map(cf => /*#__PURE__*/React.createElement("button", {
-    key: cf.id,
-    onClick: () => {
-      if (!longPressFired.current) toggleCustomFood(cf.id);
-    },
-    onPointerDown: () => !editMode && startLongPress(cf),
-    onPointerUp: cancelLongPress,
-    onPointerLeave: cancelLongPress,
-    "data-testid": "custom-food-chip",
-    "data-cf-id": cf.id,
-    "aria-pressed": !!selectedCustomFoods[cf.id],
-    className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${selectedCustomFoods[cf.id] ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
-  }, cf.emoji, " ", cf.name)))), !editMode && filteredIngredients.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2"
+    }, "-"), /*#__PURE__*/React.createElement("span", {
+      className: "text-2xl leading-none"
+    }, item.emoji || CATEGORY_EMOJI[item.category] || "\u{1F372}"), /*#__PURE__*/React.createElement("span", {
+      className: "entry-grid-label text-on-surface-variant"
+    }, item.name));
+  })), tab === "meals" && lowerQuery && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-2 auto-rows-fr",
+    "data-testid": "meal-pills"
+  }, (filteredRankedFoods || []).map(item => {
+    const rid = item.sourceRecipeId || item.id;
+    const isSelected = item._kind === "custom" ? !!selectedCustomFoods[item.id] : selectedRecipes.includes(rid);
+    return /*#__PURE__*/React.createElement("button", {
+      key: item.id,
+      onClick: () => {
+        if (editMode) {
+          item._kind === "custom" ? openWizardEdit(item) : setEditorItem(item);
+          return;
+        }
+        if (item._kind === "custom") {
+          if (!longPressFired.current) toggleCustomFood(item.id);
+        } else handleLogItem(item);
+      },
+      "aria-label": `${item.emoji || CATEGORY_EMOJI[item.category] || "\u{1F372}"} ${item.name}`,
+      "aria-pressed": isSelected,
+      "aria-selected": isSelected,
+      "data-testid": item._kind === "custom" ? "custom-food-chip" : "item-chip",
+      "data-item-id": item.id,
+      "data-cf-id": item._kind === "custom" ? item.id : undefined,
+      className: `entry-grid-cell liquid-glass-light rounded-2xl flex flex-col items-center justify-center gap-0.5 relative transition-all ${editMode ? "animate-jiggle" : isSelected ? "border-2 border-primary/40 bg-primary/10" : ""}`
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "text-2xl leading-none"
+    }, item.emoji || CATEGORY_EMOJI[item.category] || "\u{1F372}"), /*#__PURE__*/React.createElement("span", {
+      className: "entry-grid-label text-on-surface-variant"
+    }, item.name));
+  })), filteredIngredients.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "mt-3 space-y-2"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "font-headline text-sm font-semibold text-on-surface-variant"
   }, "Foods"), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2",
+    className: "grid grid-cols-3 gap-2 auto-rows-fr",
     "data-testid": "ingredient-pills"
   }, filteredIngredients.map(ing => /*#__PURE__*/React.createElement("button", {
     key: ing.id,
@@ -2055,37 +2242,46 @@ function LogDaySheet({
     "data-testid": `ingredient-pill-${ing.id}`,
     "data-ing-id": ing.id,
     "aria-pressed": !!selectedIngredients[ing.id],
-    className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${selectedIngredients[ing.id] ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
-  }, CATEGORY_EMOJI[ing.category] || "\u{1F37D}", " ", ing.name))))), tab === "supplements" && /*#__PURE__*/React.createElement("div", {
+    className: `entry-grid-cell liquid-glass-light rounded-2xl flex flex-col items-center justify-center gap-0.5 transition-all ${selectedIngredients[ing.id] ? "border-2 border-primary/40 bg-primary/10" : ""}`
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-2xl leading-none"
+  }, CATEGORY_EMOJI[ing.category] || "\u{1F37D}"), /*#__PURE__*/React.createElement("span", {
+    className: "entry-grid-label text-on-surface-variant"
+  }, ing.name)))))), tab === "supplements" && /*#__PURE__*/React.createElement("div", {
     className: "space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-wrap gap-2",
+    className: "grid grid-cols-3 gap-2 auto-rows-fr",
     "data-testid": "supp-pills"
-  }, (lowerQuery ? filteredSuppItems : filteredSuppItems.slice(0, 6)).map(item => /*#__PURE__*/React.createElement("button", {
+  }, (lowerQuery ? filteredSuppItems : filteredSuppItems.slice(0, 17)).map(item => /*#__PURE__*/React.createElement("button", {
     key: item.id,
     onClick: () => editMode ? setEditorItem(item) : handleLogItem(item),
+    "aria-label": `${item.emoji} ${item.name}`,
     "data-testid": "item-chip",
     "data-item-id": item.id,
-    className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${editMode ? "animate-jiggle border-on-surface/10 bg-on-surface/5 text-on-surface-variant" : checkedSupps[item.id] ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
+    className: `entry-grid-cell liquid-glass-light rounded-2xl flex flex-col items-center justify-center gap-0.5 relative transition-all ${editMode ? "animate-jiggle" : checkedSupps[item.id] ? "border-2 border-primary/40 bg-primary/10" : ""}`
   }, editMode && /*#__PURE__*/React.createElement("span", {
     className: "delete-badge",
     onClick: e => {
       e.stopPropagation();
       handleDeleteItem(item.id, item.name);
     }
-  }, "-"), item.emoji, " ", item.name))), !editMode && /*#__PURE__*/React.createElement(ClosingGaps, {
+  }, "-"), /*#__PURE__*/React.createElement("span", {
+    className: "text-2xl leading-none"
+  }, item.emoji), /*#__PURE__*/React.createElement("span", {
+    className: "entry-grid-label text-on-surface-variant"
+  }, item.name)))), !editMode && /*#__PURE__*/React.createElement(ClosingGaps, {
     suppItems: suppItems,
     checkedSupps: checkedSupps,
     onToggle: toggleSuppById
   })), canCreate && (creatingName === null ? /*#__PURE__*/React.createElement("button", {
     onClick: () => setCreatingName(""),
     "data-testid": "create-template",
-    className: "w-full rounded-full py-2.5 text-sm font-label border border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20 transition flex items-center justify-center gap-1.5"
+    className: "w-full mt-3 rounded-full py-2.5 text-sm font-label border border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20 transition flex items-center justify-center gap-1.5"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "bookmark_add",
     size: 18
   }), " Create Template") : /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2"
+    className: "flex items-center gap-2 mt-3"
   }, /*#__PURE__*/React.createElement("input", {
     type: "text",
     autoFocus: true,
@@ -2108,6 +2304,21 @@ function LogDaySheet({
     name: "close",
     size: 18
   }))))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between py-2 mt-1"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEditMode(!editMode);
+      if (editMode) setEditorItem(null);
+    },
+    "data-testid": "edit-toggle",
+    className: `text-sm font-semibold font-label px-3 py-1 rounded-lg transition-all ${editMode ? "bg-primary/15 text-primary-fixed-dim" : "text-primary-fixed-dim"}`
+  }, editMode ? "Done" : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Icon, {
+    name: "edit",
+    size: 14,
+    className: "inline -mt-0.5 mr-1"
+  }), "Edit")), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-on-surface-variant"
+  }, editMode ? "Tap cell to edit" : "Tap to log"))), /*#__PURE__*/React.createElement("div", {
     className: "absolute bottom-0 left-0 right-0 p-5 sheet-bottom-fade"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: handleConfirmMeal,
