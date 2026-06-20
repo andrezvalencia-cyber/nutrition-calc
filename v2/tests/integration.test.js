@@ -806,6 +806,76 @@ test.describe('cloud sync hydration (phase 4)', () => {
     const cls = await page.evaluate(() => window.__cls || 0);
     expect(cls).toBeLessThan(0.01);
   });
+
+  test('CLS on Dashboard tab during hydration stays under 0.01', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.__cls = 0;
+      try {
+        new PerformanceObserver((list) => {
+          for (const e of list.getEntries()) {
+            if (!e.hadRecentInput) window.__cls += e.value;
+          }
+        }).observe({ type: 'layout-shift', buffered: true });
+      } catch (_) {}
+    });
+    await preseedState(page, seedAppState({ cloudSync: true, onboarded: true, onboardingProfile: { calories: 2000 } }));
+    await installIdentityStub(page, {
+      signedIn: true,
+      days: Array.from({ length: 10 }, (_, i) => ({
+        day_date: '2026-04-' + String(10 + i).padStart(2, '0'),
+        totals: {},
+        gaps_closed: 3,
+        energy: 3,
+        digestion: 3,
+        notes: '',
+        updated_at: '2026-04-10T00:00:00Z',
+      })),
+      entries: [
+        { id: 'h-1', idempotency_key: 'h-1', recipe_id: 'eggs_scrambled', servings: 2, logged_at: new Date().toISOString() },
+        { id: 'h-2', idempotency_key: 'h-2', recipe_id: 'salmon_fillet', servings: 1, logged_at: new Date().toISOString() },
+      ],
+    });
+
+    await page.goto('/');
+    await page.waitForFunction(() => {
+      const s = JSON.parse(localStorage.getItem('nutrition_calc_v2') || '{}');
+      return (s.dayHistory || []).length >= 10;
+    }, null, { timeout: 5000 });
+
+    // Navigate to Dashboard tab (2nd button in bottom nav).
+    // Pre-seed onboarded + onboardingProfile to prevent the onboarding
+    // overlay from intercepting pointer events on the nav.
+    const navButtons = page.locator('[data-testid="bottom-nav"] button');
+    await navButtons.nth(1).click();
+    await page.waitForTimeout(500);
+
+    const cls = await page.evaluate(() => window.__cls || 0);
+    expect(cls).toBeLessThan(0.01);
+  });
+
+  test('icon elements reserve fixed box and are aria-hidden', async ({ page }) => {
+    await preseedState(page, seedAppState({}));
+    await page.goto('/');
+    await page.waitForSelector('.material-symbols-outlined', { timeout: 5000 });
+
+    const icons = await page.$$eval('.material-symbols-outlined', (els) =>
+      els.slice(0, 10).map((el) => {
+        const cs = getComputedStyle(el);
+        return {
+          width: cs.width,
+          fontSize: cs.fontSize,
+          overflow: cs.overflow,
+          ariaHidden: el.getAttribute('aria-hidden'),
+        };
+      })
+    );
+
+    for (const icon of icons) {
+      expect(icon.overflow).toBe('hidden');
+      expect(icon.ariaHidden).toBe('true');
+      expect(icon.width).toBe(icon.fontSize);
+    }
+  });
 });
 
 // ── Phase 5: Write-behind queue ───────────────────────────────────────────────
