@@ -145,7 +145,7 @@ test("custom food with empty nutrients logs all-zero finite entry", async ({ pag
   await page.fill('[data-testid="log-search"]', "Empty Test Food");
   await page.waitForTimeout(300);
 
-  const cfPill = page.locator('[data-testid="custom-food-pills"] button').first();
+  const cfPill = page.locator('[data-testid="custom-food-chip"]').first();
   await expect(cfPill).toBeVisible({ timeout: 3000 });
   await cfPill.click();
 
