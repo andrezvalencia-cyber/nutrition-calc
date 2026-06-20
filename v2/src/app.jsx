@@ -109,6 +109,38 @@
         });
       }, []);
 
+      // One-time migration: convert static RECIPES + SUPPLEMENT_RECIPES into
+      // editable templates stored in state.templates. Idempotent — checks
+      // sourceRecipeId to avoid duplicating items on re-runs.
+      useEffect(() => {
+        setState((s) => {
+          if (s._recipesMigrated) return s;
+          const existing = s.templates || [];
+          const existingSourceIds = new Set(existing.filter(t => t.sourceRecipeId).map(t => t.sourceRecipeId));
+          const migrated = [];
+          Object.entries(allRecipes).forEach(([key, recipe]) => {
+            if (existingSourceIds.has(key)) return;
+            const ingredientLines = (recipe.ingredients || []).map(ing => {
+              const data = Modules.Catalog.getIngredient(ing.id);
+              if (!data) return ing.id;
+              return (data.defaultQty || 1) + (data.unit || "g") + " " + data.name;
+            });
+            migrated.push({
+              id: genId(),
+              name: recipe.name,
+              emoji: recipe.emoji,
+              type: recipe.type || "meal",
+              ingredientText: ingredientLines.join("\n"),
+              nutrients: recipe.verifiedTotal ? { ...recipe.verifiedTotal } : null,
+              sourceRecipeId: key,
+              refs: recipe.ingredients ? recipe.ingredients.map(ing => ({ id: ing.id, swapGroup: ing.swapGroup })) : [],
+              createdAt: Date.now(),
+            });
+          });
+          return { ...s, templates: existing.concat(migrated), _recipesMigrated: true };
+        });
+      }, []);
+
       const value = useMemo(() => ({
         state, setState, runningTotals, gapsClosed, allRecipes, apiKey, setApiKey,
       }), [state, setState, runningTotals, gapsClosed, allRecipes, apiKey, setApiKey]);
@@ -117,6 +149,50 @@
     }
 
     function useNutrition() { return useContext(NutritionContext); }
+
+    // ============================================================
+    // Shared AI nutrient estimation
+    // ============================================================
+    async function estimateNutrients(text, apiKey, aiModel) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+      const trimmed = text.slice(0, MAX_QUICK_TEXT);
+      try {
+        const sysPrompt = `You are a nutrition estimation assistant. Given a list of food ingredients with quantities, respond with ONLY a JSON object containing these 16 nutrient keys with numeric values (no text, no markdown): ${NUTRIENT_KEYS.join(", ")}. Units: protein/carbs/fat/fiber/sat_fat in g, epa_dha/calcium/iron/zinc/potassium/magnesium/vit_c in mg, vit_d in IU, vit_e in mg, b12 in mcg, folate in mcg. Estimate the combined nutritional content of all listed ingredients.`;
+        const resp = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true",
+          },
+          body: JSON.stringify({
+            model: aiModel || "claude-sonnet-4-6",
+            max_tokens: 300,
+            system: sysPrompt,
+            messages: [{ role: "user", content: trimmed }],
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+        if (resp.status === 429) throw new Error("Rate limited. Try again shortly.");
+        if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+        const data = await resp.json();
+        const respText = data.content?.[0]?.text || "";
+        const jsonMatch = respText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("Could not parse AI response");
+        const nutrients = JSON.parse(jsonMatch[0]);
+        for (const k of NUTRIENT_KEYS) {
+          if (typeof nutrients[k] !== "number" || !isFinite(nutrients[k]) || nutrients[k] < 0) nutrients[k] = 0;
+        }
+        return nutrients;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    const FOOD_EMOJIS = ["\u{1F37D}", "\u{1F964}", "\u{1F957}", "\u{1F372}", "\u{1F35C}", "\u{1F96A}", "\u{1F34E}", "\u{1F955}", "\u{1F48A}", "\u{1F41F}", "\u{1F95B}", "\u{1F330}", "\u{1F373}", "\u{1F356}"];
 
     // ============================================================
     // AuthContext (Phase 3 — UI only, no read/write yet)
@@ -1044,22 +1120,32 @@
         return () => cancelAnimationFrame(id);
       }, []);
 
-      const mealRecipes = useMemo(() =>
-        Object.entries(allRecipes).filter(([, r]) => r.type === "meal" || r.type === "snack" || r.type === "supplement_food"),
-        [allRecipes]
+      // ── Unified items from state.templates ────────────────────────────────
+      const allTemplates = state.templates || [];
+      const mealItems = useMemo(() =>
+        allTemplates.filter(t => !t.type || t.type === "meal" || t.type === "snack" || t.type === "supplement_food"),
+        [allTemplates]
       );
-      const suppRecipes = useMemo(() =>
-        Object.entries(allRecipes).filter(([, r]) => r.type === "supplement"),
-        [allRecipes]
+      const suppItems = useMemo(() =>
+        allTemplates.filter(t => t.type === "supplement"),
+        [allTemplates]
       );
 
       const customFoods = state.customFoods || [];
 
-      // ── Filtered pills (recipes + templates + custom foods) ─────────────────
+      // ── Edit mode (jiggle) ─────────────────────────────────────────────────
+      const [editMode, setEditMode] = useState(false);
+      const [editorItem, setEditorItem] = useState(null);
+
+      // ── Filtered pills ─────────────────────────────────────────────────────
       const lowerQuery = query.toLowerCase().trim();
-      const filteredMealRecipes = useMemo(() =>
-        lowerQuery ? mealRecipes.filter(([, r]) => r.name.toLowerCase().includes(lowerQuery)) : mealRecipes,
-        [mealRecipes, lowerQuery]
+      const filteredMealItems = useMemo(() =>
+        lowerQuery ? mealItems.filter(t => t.name.toLowerCase().includes(lowerQuery)) : mealItems,
+        [mealItems, lowerQuery]
+      );
+      const filteredSuppItems = useMemo(() =>
+        lowerQuery ? suppItems.filter(t => t.name.toLowerCase().includes(lowerQuery)) : suppItems,
+        [suppItems, lowerQuery]
       );
       const filteredCustomFoods = useMemo(() =>
         lowerQuery ? customFoods.filter((cf) => cf.name.toLowerCase().includes(lowerQuery)) : customFoods,
@@ -1142,7 +1228,7 @@
         setShowScanner(false);
         setQuery(code);
         const lc = code.toLowerCase().trim();
-        const anyMatch = mealRecipes.some(([, r]) => r.name.toLowerCase().includes(lc))
+        const anyMatch = mealItems.some((t) => t.name.toLowerCase().includes(lc))
           || customFoods.some((cf) => cf.name.toLowerCase().includes(lc));
         if (!anyMatch) {
           openWizard({ barcode: code });
@@ -1285,12 +1371,25 @@
         setCheckedSupps((prev) => ({ ...prev, [id]: !prev[id] }));
       };
 
-      // ── Templates: one-tap re-log + create-from-current-selection ──────────
-      const templates = state.templates || [];
-      const filteredTemplates = useMemo(() =>
-        lowerQuery ? templates.filter((t) => t.name.toLowerCase().includes(lowerQuery)) : templates,
-        [templates, lowerQuery]
-      );
+      const toggleSuppById = (templateId) => {
+        setCheckedSupps((prev) => ({ ...prev, [templateId]: !prev[templateId] }));
+      };
+
+      const handleLogItem = (item) => {
+        if (item.type === "supplement") {
+          toggleSuppById(item.id);
+          return;
+        }
+        const recipeId = item.sourceRecipeId || item.id;
+        handleSelectRecipe(recipeId);
+      };
+
+      const handleDeleteItem = (id, name) => {
+        setState((s) => Modules.Templates.removeTemplate(s, id));
+        showToast({ text: `Deleted ${name}` });
+      };
+
+      // ── Templates: create-from-current-selection ──────────────────────────
       const [creatingName, setCreatingName] = useState(null);
       const canCreate = selectedRecipes.length > 0 || Object.values(checkedSupps).some(Boolean);
 
@@ -1358,6 +1457,118 @@
         || Object.values(checkedSupps).some(Boolean)
         || Object.values(selectedCustomFoods).some(Boolean)
         || Object.values(selectedIngredients).some(Boolean);
+
+      // ── Item Editor state (always declared — hooks can't be conditional) ──
+      const [edName, setEdName] = useState("");
+      const [edEmoji, setEdEmoji] = useState("");
+      const [edText, setEdText] = useState("");
+      const [edSaving, setEdSaving] = useState(false);
+      const editorRef = useRef(null);
+
+      useEffect(() => {
+        if (editorItem && editorItem !== editorRef.current) {
+          editorRef.current = editorItem;
+          setEdName(editorItem.name || "");
+          setEdEmoji(editorItem.emoji || "\u{1F37D}");
+          setEdText(editorItem.ingredientText || "");
+          setEdSaving(false);
+        }
+        if (!editorItem) editorRef.current = null;
+      }, [editorItem]);
+
+      const cycleEditorEmoji = () => {
+        const idx = FOOD_EMOJIS.indexOf(edEmoji);
+        setEdEmoji(FOOD_EMOJIS[(idx + 1) % FOOD_EMOJIS.length]);
+      };
+
+      const saveEditor = async () => {
+        if (!editorItem) return;
+        const changes = { name: edName.slice(0, 40).trim() || "Untitled", emoji: edEmoji, ingredientText: edText, updatedAt: Date.now() };
+        if (edText.trim() && edText !== (editorItem.ingredientText || "") && state.apiKey) {
+          setEdSaving(true);
+          try {
+            const nutrients = await estimateNutrients(edText, state.apiKey, state.aiModel);
+            if (nutrients) {
+              NUTRIENT_KEYS.forEach((k) => { if (nutrients[k] == null || isNaN(nutrients[k])) nutrients[k] = 0; });
+              changes.nutrients = nutrients;
+            }
+          } catch (e) {
+            showToast({ text: "AI estimation failed — saved without nutrient update" });
+          }
+          setEdSaving(false);
+        }
+        setState((s) => Modules.Templates.updateTemplate(s, editorItem.id, changes));
+        showToast({ text: `Updated ${changes.name}` });
+        setEditorItem(null);
+      };
+
+      const deleteFromEditor = () => {
+        if (!editorItem) return;
+        setState((s) => Modules.Templates.removeTemplate(s, editorItem.id));
+        showToast({ text: `Deleted ${editorItem.name}` });
+        setEditorItem(null);
+      };
+
+      // ── Item Editor overlay (edit mode) ────────────────────────────────────
+      if (editorItem) {
+        return (
+          <div className="fixed inset-0 z-[70] animate-fade-in">
+            <div className="absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm" onClick={() => setEditorItem(null)} />
+            <div className="absolute bottom-0 left-0 right-0 bg-surface-container dark:bg-[#0a0a0a] modal-sheet max-h-[85vh] flex flex-col animate-slide-up"
+                 style={kbOffset > 0 ? { paddingBottom: kbOffset } : undefined}>
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full bg-on-surface/20" />
+              </div>
+              <div className="flex items-center justify-between px-5 pb-3">
+                <h2 className="font-headline text-lg font-bold">Edit Item</h2>
+                <div className="flex items-center gap-1">
+                  <button onClick={deleteFromEditor} className="p-2 hover:bg-on-surface/10 rounded-full transition text-red-400" aria-label="Delete" data-testid="editor-delete">
+                    <Icon name="delete" size={20} />
+                  </button>
+                  <button onClick={() => setEditorItem(null)} className="p-2 hover:bg-on-surface/10 rounded-full transition" aria-label="Cancel" data-testid="editor-cancel">
+                    <Icon name="close" size={20} />
+                  </button>
+                  <button onClick={saveEditor} disabled={edSaving || !edName.trim()} className="p-2 hover:bg-on-surface/10 rounded-full transition text-primary-fixed-dim disabled:opacity-40" aria-label="Save" data-testid="editor-save">
+                    <Icon name={edSaving ? "hourglass_top" : "check"} size={20} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 pb-24 space-y-4" data-testid="item-editor">
+                <div className="flex gap-3 items-center">
+                  <button onClick={cycleEditorEmoji} className="w-12 h-12 bg-on-surface/5 rounded-xl flex items-center justify-center text-2xl" aria-label="Change emoji">
+                    {edEmoji}
+                  </button>
+                  <input
+                    type="text"
+                    autoFocus
+                    maxLength={40}
+                    value={edName}
+                    onChange={(e) => setEdName(e.target.value)}
+                    placeholder="Item name"
+                    data-testid="editor-name"
+                    className="flex-1 bg-on-surface/5 rounded-xl px-4 py-2.5 text-sm placeholder:text-on-surface-variant/40"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-on-surface-variant font-label">Ingredients</label>
+                  <textarea
+                    value={edText}
+                    onChange={(e) => setEdText(e.target.value)}
+                    placeholder={"e.g.\n48g pea protein\n40g rolled oats\n1 banana"}
+                    rows={6}
+                    data-testid="editor-ingredients"
+                    className="w-full bg-on-surface/5 rounded-xl px-4 py-3 text-sm placeholder:text-on-surface-variant/40 resize-none"
+                  />
+                  <div className="flex items-center gap-1.5 text-xs text-on-surface-variant/60">
+                    <Icon name="auto_awesome" size={14} />
+                    <span>Nutrients calculated automatically from ingredients</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
 
       // ── Custom Food Wizard (inline overlay) ─────────────────────────────────
       if (wizardOpen) {
@@ -1508,61 +1719,63 @@
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto px-5 pb-24 space-y-4">
-              {/* Templates */}
-              {filteredTemplates.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="font-headline text-base font-semibold">Your Templates</h3>
-                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                    {filteredTemplates.map((tpl) => {
-                      const res = Modules.Templates.resolveTemplate(tpl, allRecipes);
-                      const degraded = !res.ok;
-                      return (
-                        <button
-                          key={tpl.id}
-                          data-testid="template-chip"
-                          data-template-id={tpl.id}
-                          data-degraded={degraded ? "true" : "false"}
-                          disabled={degraded}
-                          onClick={() => logTemplate(tpl)}
-                          title={degraded ? "Some items unavailable" : `Log ${tpl.name}`}
-                          className={`shrink-0 px-4 py-2 rounded-full text-sm font-label border flex items-center gap-1.5 transition-all ${
-                            degraded
-                              ? "border-on-surface/10 bg-on-surface/5 text-on-surface-variant/40 opacity-50 cursor-not-allowed"
-                              : "border-primary/40 bg-primary/10 text-white hover:bg-primary/20"
-                          }`}
-                        >
-                          {degraded && <Icon name="error" size={16} className="text-orange-400" />}
-                          <span>{tpl.emoji} {tpl.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+            <div className={`flex-1 overflow-y-auto px-5 pb-24 space-y-4${editMode ? "" : ""}`}>
+              {/* Edit / Done toggle + hint */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => { setEditMode(!editMode); if (editMode) setEditorItem(null); }}
+                  data-testid="edit-toggle"
+                  className={`text-sm font-semibold font-label px-3 py-1 rounded-lg transition-all ${
+                    editMode ? "bg-primary/15 text-primary-fixed-dim" : "text-primary-fixed-dim"
+                  }`}
+                >
+                  {editMode ? "Done" : <><Icon name="edit" size={14} className="inline -mt-0.5 mr-1" />Edit</>}
+                </button>
+                <span className="text-xs text-on-surface-variant">
+                  {editMode ? "Tap chip to edit" : "Tap to log"}
+                </span>
+              </div>
 
+              {/* Unified pill grid */}
               {tab === "meals" && (
                 <>
-                  {/* Recipe pills */}
                   <div className="flex flex-wrap gap-2" data-testid="meal-pills">
-                    {filteredMealRecipes.map(([id, r]) => (
+                    {(lowerQuery ? filteredMealItems : filteredMealItems.slice(0, 6)).map((item) => {
+                      const rid = item.sourceRecipeId || item.id;
+                      const isSelected = selectedRecipes.includes(rid);
+                      const isDegraded = !item.nutrients && Array.isArray(item.refs) && item.refs.length > 0
+                        && item.refs.some(r => !allRecipes[r.recipeId]);
+                      return (
                       <button
-                        key={id}
-                        onClick={() => handleSelectRecipe(id)}
-                        aria-pressed={selectedRecipes.includes(id)}
+                        key={item.id}
+                        onClick={() => isDegraded ? null : (editMode ? setEditorItem(item) : handleLogItem(item))}
+                        disabled={isDegraded}
+                        aria-pressed={isSelected}
+                        data-testid="item-chip"
+                        data-item-id={item.id}
+                        data-degraded={isDegraded || undefined}
                         className={`px-4 py-2 rounded-full text-sm font-label transition-all border ${
-                          selectedRecipes.includes(id)
+                          isDegraded ? "border-on-surface/10 bg-on-surface/5 text-on-surface-variant/40 opacity-50 cursor-not-allowed" :
+                          editMode ? "animate-jiggle border-on-surface/10 bg-on-surface/5 text-on-surface-variant" :
+                          isSelected
                             ? "border-primary/40 bg-primary/10 text-white"
                             : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"
                         }`}
                       >
-                        {r.emoji} {r.name}
+                        {editMode && !isDegraded && (
+                          <span
+                            className="delete-badge"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id, item.name); }}
+                          >-</span>
+                        )}
+                        {item.emoji} {item.name}
                       </button>
-                    ))}
+                    );
+                    })}
                   </div>
 
                   {/* Custom food pills */}
-                  {filteredCustomFoods.length > 0 && (
+                  {!editMode && filteredCustomFoods.length > 0 && (
                     <div className="space-y-2">
                       <h3 className="font-headline text-sm font-semibold text-on-surface-variant">Custom Foods</h3>
                       <div className="flex flex-wrap gap-2" data-testid="custom-food-pills">
@@ -1570,7 +1783,7 @@
                           <button
                             key={cf.id}
                             onClick={() => { if (!longPressFired.current) toggleCustomFood(cf.id); }}
-                            onPointerDown={() => startLongPress(cf)}
+                            onPointerDown={() => !editMode && startLongPress(cf)}
                             onPointerUp={cancelLongPress}
                             onPointerLeave={cancelLongPress}
                             data-testid="custom-food-chip"
@@ -1590,7 +1803,7 @@
                   )}
 
                   {/* Catalog ingredient pills */}
-                  {filteredIngredients.length > 0 && (
+                  {!editMode && filteredIngredients.length > 0 && (
                     <div className="space-y-2">
                       <h3 className="font-headline text-sm font-semibold text-on-surface-variant">Foods</h3>
                       <div className="flex flex-wrap gap-2" data-testid="ingredient-pills">
@@ -1613,91 +1826,38 @@
                       </div>
                     </div>
                   )}
-
-                  {/* Meal Detail */}
-                  {selectedRecipe && allRecipes[selectedRecipe] && (
-                    <div className="space-y-3">
-                      <h3 className="font-headline text-base font-semibold">Ingredients</h3>
-                      {ingredientStates.map((ing, idx) => {
-                        const ingData = Modules.Catalog.getIngredient(ing.id);
-                        if (!ingData) return null;
-                        return (
-                          <div key={idx} className="liquid-glass p-4 rounded-3xl space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold">{ingData.name}</span>
-                              {ing.swapGroup && Modules.Catalog.getSwapGroup(ing.swapGroup) && (
-                                <SwapDropdown
-                                  group={ing.swapGroup}
-                                  currentId={ing.id}
-                                  onSwap={(newId) => swapIngredient(idx, newId)}
-                                />
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                value={ing.qty}
-                                onChange={(e) => updateIngQty(idx, parseFloat(e.target.value) || 0)}
-                                className="w-20 bg-on-surface/5 rounded-xl px-3 py-1.5 text-sm text-center"
-                              />
-                              <span className="text-xs text-on-surface-variant">{ingData.unit}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {/* Macro Summary */}
-                      <div className="space-y-2">
-                        <h3 className="font-headline text-base font-semibold">Projected Macros</h3>
-                        <div className="asymmetric-grid">
-                          <div className="liquid-glass rounded-3xl p-4 flex flex-col justify-center">
-                            <span className="text-3xl font-headline font-extrabold">{computeCalories(projectedNutrients)}</span>
-                            <span className="text-xs text-on-surface-variant mt-1">kcal</span>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="liquid-glass rounded-2xl p-3">
-                              <span className="text-xs text-on-surface-variant">Protein</span>
-                              <p className="font-semibold text-sm">{Math.round(projectedNutrients.protein)}g</p>
-                            </div>
-                            <div className="liquid-glass rounded-2xl p-3">
-                              <span className="text-xs text-on-surface-variant">Carbs</span>
-                              <p className="font-semibold text-sm">{Math.round(projectedNutrients.carbs)}g</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
 
               {tab === "supplements" && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    {suppRecipes.map(([id, r]) => {
-                      const checked = !!checkedSupps[id];
-                      return (
-                        <button
-                          key={id}
-                          onClick={() => toggleSupp(id)}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all ${
-                            checked ? "liquid-glass" : "bg-on-surface/5 opacity-50"
-                          }`}
-                        >
-                          <Icon
-                            name={checked ? "check_circle" : "radio_button_unchecked"}
-                            size={20}
-                            fill={checked}
-                            className={checked ? "text-primary-container" : "text-on-surface-variant"}
-                          />
-                          <span className="text-sm font-label truncate">{r.name}</span>
-                        </button>
-                      );
-                    })}
+                  <div className="flex flex-wrap gap-2" data-testid="supp-pills">
+                    {(lowerQuery ? filteredSuppItems : filteredSuppItems.slice(0, 6)).map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => editMode ? setEditorItem(item) : handleLogItem(item)}
+                        data-testid="item-chip"
+                        data-item-id={item.id}
+                        className={`px-4 py-2 rounded-full text-sm font-label transition-all border ${
+                          editMode ? "animate-jiggle border-on-surface/10 bg-on-surface/5 text-on-surface-variant" :
+                          checkedSupps[item.id]
+                            ? "border-primary/40 bg-primary/10 text-white"
+                            : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"
+                        }`}
+                      >
+                        {editMode && (
+                          <span
+                            className="delete-badge"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteItem(item.id, item.name); }}
+                          >-</span>
+                        )}
+                        {item.emoji} {item.name}
+                      </button>
+                    ))}
                   </div>
 
                   {/* Closing Gaps */}
-                  <ClosingGaps suppRecipes={suppRecipes} checkedSupps={checkedSupps} onToggle={toggleSupp} />
+                  {!editMode && <ClosingGaps suppItems={suppItems} checkedSupps={checkedSupps} onToggle={toggleSuppById} />}
                 </div>
               )}
 
@@ -1786,24 +1946,20 @@
     // ============================================================
     // ClosingGaps (supplements that help close remaining gaps)
     // ============================================================
-    function ClosingGaps({ suppRecipes, checkedSupps, onToggle }) {
+    function ClosingGaps({ suppItems, checkedSupps, onToggle }) {
       const { runningTotals } = useNutrition();
       const gaps = useMemo(() => getOpenGaps(runningTotals), [runningTotals]);
 
       const helpfulSupps = useMemo(() => {
         const result = [];
-        for (const [id, r] of suppRecipes) {
-          if (checkedSupps[id]) continue;
-          const rStates = r.ingredients.map((i) => ({
-            id: i.id,
-            qty: Modules.Catalog.getIngredient(i.id)?.defaultQty || 1,
-          }));
-          const rTotals = Modules.Recipes.calculateNutrition(r, rStates);
-          const helps = gaps.filter((g) => g.type === "under" && (rTotals[g.key] || 0) > 0);
-          if (helps.length > 0) result.push({ id, name: r.name, helps: helps.map((h) => h.label) });
+        for (const item of suppItems) {
+          if (checkedSupps[item.id]) continue;
+          const nutrients = item.nutrients || {};
+          const helps = gaps.filter((g) => g.type === "under" && (nutrients[g.key] || 0) > 0);
+          if (helps.length > 0) result.push({ id: item.id, name: item.name, helps: helps.map((h) => h.label) });
         }
         return result;
-      }, [suppRecipes, checkedSupps, gaps]);
+      }, [suppItems, checkedSupps, gaps]);
 
       if (helpfulSupps.length === 0) return null;
 

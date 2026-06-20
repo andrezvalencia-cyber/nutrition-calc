@@ -78,6 +78,22 @@
     });
   }
 
+  /**
+   * Merge partial changes into an existing template by id.
+   * @param {object} state - App state containing templates array
+   * @param {string} id - Template id to update
+   * @param {object} changes - Partial fields to merge (name, emoji, ingredientText, nutrients, etc.)
+   * @returns {object} New state with updated template
+   */
+  function updateTemplate(state, id, changes) {
+    return Object.assign({}, state, {
+      templates: (state.templates || []).map(function (t) {
+        if (t.id !== id) return t;
+        return Object.assign({}, t, changes);
+      }),
+    });
+  }
+
   // ── Resolution + degraded-state oracle ────────────────────────────────────
   // Returns { ok, entries, missing }. `entries` are loggable dayLog entries
   // for the refs that DID resolve; `missing` lists refs that didn't. `ok` is
@@ -161,6 +177,7 @@
     NAME_MAX: NAME_MAX,
     addTemplate: addTemplate,
     removeTemplate: removeTemplate,
+    updateTemplate: updateTemplate,
     buildTemplate: buildTemplate,
     resolveTemplate: resolveTemplate,
     seedExamples: seedExamples,

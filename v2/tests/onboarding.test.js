@@ -44,7 +44,7 @@ test('first run seeds example templates and the progress ring renders', async ({
   await openSheet(page);
   await expect(page.getByText('Standard Breakfast')).toBeVisible();
   await expect(page.getByText('Morning Vitality')).toBeVisible();
-  const chips = page.locator('[data-testid="template-chip"]');
+  const chips = page.locator('[data-testid="item-chip"]');
   expect(await chips.count()).toBeGreaterThanOrEqual(2);
 });
 
@@ -80,11 +80,12 @@ test('a custom template persists across reload with the exact id and emoji', asy
   const { id, emoji } = await handle.jsonValue();
   expect(id).toBeTruthy();
 
-  // Reload, reopen, and assert the SAME id + emoji are still rendered.
+  // Reload, reopen, and search to find the template (may be beyond the 6-item slice).
   await page.reload();
   await page.waitForSelector(RING, { timeout: 8000 });
   await openSheet(page);
-  const chip = page.locator(`[data-testid="template-chip"][data-template-id="${id}"]`);
+  await page.locator('[data-testid="log-search"]').fill('My Lunch Combo');
+  const chip = page.locator(`[data-testid="item-chip"][data-item-id="${id}"]`);
   await expect(chip).toBeVisible();
   await expect(chip).toContainText('My Lunch Combo');
   await expect(chip).toContainText(emoji);
@@ -108,7 +109,7 @@ test('a template referencing a missing recipe renders degraded, not crashed', as
   await expect(page.locator('#root')).not.toBeEmpty();
 
   await openSheet(page);
-  const chip = page.locator('[data-testid="template-chip"][data-template-id="tpl_broken"]');
+  const chip = page.locator('[data-testid="item-chip"][data-item-id="tpl_broken"]');
   await expect(chip).toBeVisible();
   await expect(chip).toHaveAttribute('data-degraded', 'true');
   await expect(chip).toBeDisabled();

@@ -134,6 +134,47 @@ function NutritionProvider({
       };
     });
   }, []);
+
+  // One-time migration: convert static RECIPES + SUPPLEMENT_RECIPES into
+  // editable templates stored in state.templates. Idempotent — checks
+  // sourceRecipeId to avoid duplicating items on re-runs.
+  useEffect(() => {
+    setState(s => {
+      if (s._recipesMigrated) return s;
+      const existing = s.templates || [];
+      const existingSourceIds = new Set(existing.filter(t => t.sourceRecipeId).map(t => t.sourceRecipeId));
+      const migrated = [];
+      Object.entries(allRecipes).forEach(([key, recipe]) => {
+        if (existingSourceIds.has(key)) return;
+        const ingredientLines = (recipe.ingredients || []).map(ing => {
+          const data = Modules.Catalog.getIngredient(ing.id);
+          if (!data) return ing.id;
+          return (data.defaultQty || 1) + (data.unit || "g") + " " + data.name;
+        });
+        migrated.push({
+          id: genId(),
+          name: recipe.name,
+          emoji: recipe.emoji,
+          type: recipe.type || "meal",
+          ingredientText: ingredientLines.join("\n"),
+          nutrients: recipe.verifiedTotal ? {
+            ...recipe.verifiedTotal
+          } : null,
+          sourceRecipeId: key,
+          refs: recipe.ingredients ? recipe.ingredients.map(ing => ({
+            id: ing.id,
+            swapGroup: ing.swapGroup
+          })) : [],
+          createdAt: Date.now()
+        });
+      });
+      return {
+        ...s,
+        templates: existing.concat(migrated),
+        _recipesMigrated: true
+      };
+    });
+  }, []);
   const value = useMemo(() => ({
     state,
     setState,
@@ -150,6 +191,53 @@ function NutritionProvider({
 function useNutrition() {
   return useContext(NutritionContext);
 }
+
+// ============================================================
+// Shared AI nutrient estimation
+// ============================================================
+async function estimateNutrients(text, apiKey, aiModel) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  const trimmed = text.slice(0, MAX_QUICK_TEXT);
+  try {
+    var _data$content;
+    const sysPrompt = `You are a nutrition estimation assistant. Given a list of food ingredients with quantities, respond with ONLY a JSON object containing these 16 nutrient keys with numeric values (no text, no markdown): ${NUTRIENT_KEYS.join(", ")}. Units: protein/carbs/fat/fiber/sat_fat in g, epa_dha/calcium/iron/zinc/potassium/magnesium/vit_c in mg, vit_d in IU, vit_e in mg, b12 in mcg, folate in mcg. Estimate the combined nutritional content of all listed ingredients.`;
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: aiModel || "claude-sonnet-4-6",
+        max_tokens: 300,
+        system: sysPrompt,
+        messages: [{
+          role: "user",
+          content: trimmed
+        }]
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if (resp.status === 429) throw new Error("Rate limited. Try again shortly.");
+    if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+    const data = await resp.json();
+    const respText = ((_data$content = data.content) === null || _data$content === void 0 || (_data$content = _data$content[0]) === null || _data$content === void 0 ? void 0 : _data$content.text) || "";
+    const jsonMatch = respText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Could not parse AI response");
+    const nutrients = JSON.parse(jsonMatch[0]);
+    for (const k of NUTRIENT_KEYS) {
+      if (typeof nutrients[k] !== "number" || !isFinite(nutrients[k]) || nutrients[k] < 0) nutrients[k] = 0;
+    }
+    return nutrients;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+const FOOD_EMOJIS = ["\u{1F37D}", "\u{1F964}", "\u{1F957}", "\u{1F372}", "\u{1F35C}", "\u{1F96A}", "\u{1F34E}", "\u{1F955}", "\u{1F48A}", "\u{1F41F}", "\u{1F95B}", "\u{1F330}", "\u{1F373}", "\u{1F356}"];
 
 // ============================================================
 // AuthContext (Phase 3 — UI only, no read/write yet)
@@ -844,7 +932,7 @@ function HomeScreen({
       "input.length": trimmed.length
     }) : null;
     try {
-      var _data$content;
+      var _data$content2;
       const sysPrompt = `You are a nutrition estimation assistant. Given a food description, respond with ONLY a JSON object containing these 16 nutrient keys with numeric values (no text, no markdown): ${NUTRIENT_KEYS.join(", ")}. Units: protein/carbs/fat/fiber/sat_fat in g, epa_dha/calcium/iron/zinc/potassium/magnesium/vit_c in mg, vit_d in IU, vit_e in mg, b12 in mcg, folate in mcg. Estimate reasonable values for a single serving.`;
       const resp = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -869,7 +957,7 @@ function HomeScreen({
       if (resp.status === 429) throw new Error("Rate limited. Try again shortly.");
       if (!resp.ok) throw new Error(`API error: ${resp.status}`);
       const data = await resp.json();
-      const text = ((_data$content = data.content) === null || _data$content === void 0 || (_data$content = _data$content[0]) === null || _data$content === void 0 ? void 0 : _data$content.text) || "";
+      const text = ((_data$content2 = data.content) === null || _data$content2 === void 0 || (_data$content2 = _data$content2[0]) === null || _data$content2 === void 0 ? void 0 : _data$content2.text) || "";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("Could not parse AI response");
       const nutrients = JSON.parse(jsonMatch[0]);
@@ -1256,13 +1344,21 @@ function LogDaySheet({
     });
     return () => cancelAnimationFrame(id);
   }, []);
-  const mealRecipes = useMemo(() => Object.entries(allRecipes).filter(([, r]) => r.type === "meal" || r.type === "snack" || r.type === "supplement_food"), [allRecipes]);
-  const suppRecipes = useMemo(() => Object.entries(allRecipes).filter(([, r]) => r.type === "supplement"), [allRecipes]);
+
+  // ── Unified items from state.templates ────────────────────────────────
+  const allTemplates = state.templates || [];
+  const mealItems = useMemo(() => allTemplates.filter(t => !t.type || t.type === "meal" || t.type === "snack" || t.type === "supplement_food"), [allTemplates]);
+  const suppItems = useMemo(() => allTemplates.filter(t => t.type === "supplement"), [allTemplates]);
   const customFoods = state.customFoods || [];
 
-  // ── Filtered pills (recipes + templates + custom foods) ─────────────────
+  // ── Edit mode (jiggle) ─────────────────────────────────────────────────
+  const [editMode, setEditMode] = useState(false);
+  const [editorItem, setEditorItem] = useState(null);
+
+  // ── Filtered pills ─────────────────────────────────────────────────────
   const lowerQuery = query.toLowerCase().trim();
-  const filteredMealRecipes = useMemo(() => lowerQuery ? mealRecipes.filter(([, r]) => r.name.toLowerCase().includes(lowerQuery)) : mealRecipes, [mealRecipes, lowerQuery]);
+  const filteredMealItems = useMemo(() => lowerQuery ? mealItems.filter(t => t.name.toLowerCase().includes(lowerQuery)) : mealItems, [mealItems, lowerQuery]);
+  const filteredSuppItems = useMemo(() => lowerQuery ? suppItems.filter(t => t.name.toLowerCase().includes(lowerQuery)) : suppItems, [suppItems, lowerQuery]);
   const filteredCustomFoods = useMemo(() => lowerQuery ? customFoods.filter(cf => cf.name.toLowerCase().includes(lowerQuery)) : customFoods, [customFoods, lowerQuery]);
   const filteredIngredients = useMemo(() => lowerQuery ? Modules.Catalog.searchIngredients(lowerQuery) : [], [lowerQuery]);
   const CATEGORY_EMOJI = {
@@ -1345,7 +1441,7 @@ function LogDaySheet({
     setShowScanner(false);
     setQuery(code);
     const lc = code.toLowerCase().trim();
-    const anyMatch = mealRecipes.some(([, r]) => r.name.toLowerCase().includes(lc)) || customFoods.some(cf => cf.name.toLowerCase().includes(lc));
+    const anyMatch = mealItems.some(t => t.name.toLowerCase().includes(lc)) || customFoods.some(cf => cf.name.toLowerCase().includes(lc));
     if (!anyMatch) {
       openWizard({
         barcode: code
@@ -1505,10 +1601,28 @@ function LogDaySheet({
       [id]: !prev[id]
     }));
   };
+  const toggleSuppById = templateId => {
+    setCheckedSupps(prev => ({
+      ...prev,
+      [templateId]: !prev[templateId]
+    }));
+  };
+  const handleLogItem = item => {
+    if (item.type === "supplement") {
+      toggleSuppById(item.id);
+      return;
+    }
+    const recipeId = item.sourceRecipeId || item.id;
+    handleSelectRecipe(recipeId);
+  };
+  const handleDeleteItem = (id, name) => {
+    setState(s => Modules.Templates.removeTemplate(s, id));
+    showToast({
+      text: `Deleted ${name}`
+    });
+  };
 
-  // ── Templates: one-tap re-log + create-from-current-selection ──────────
-  const templates = state.templates || [];
-  const filteredTemplates = useMemo(() => lowerQuery ? templates.filter(t => t.name.toLowerCase().includes(lowerQuery)) : templates, [templates, lowerQuery]);
+  // ── Templates: create-from-current-selection ──────────────────────────
   const [creatingName, setCreatingName] = useState(null);
   const canCreate = selectedRecipes.length > 0 || Object.values(checkedSupps).some(Boolean);
   const logTemplate = tpl => {
@@ -1583,6 +1697,150 @@ function LogDaySheet({
     setCreatingName(null);
   };
   const hasAnySelection = selectedRecipes.length > 0 || Object.values(checkedSupps).some(Boolean) || Object.values(selectedCustomFoods).some(Boolean) || Object.values(selectedIngredients).some(Boolean);
+
+  // ── Item Editor state (always declared — hooks can't be conditional) ──
+  const [edName, setEdName] = useState("");
+  const [edEmoji, setEdEmoji] = useState("");
+  const [edText, setEdText] = useState("");
+  const [edSaving, setEdSaving] = useState(false);
+  const editorRef = useRef(null);
+  useEffect(() => {
+    if (editorItem && editorItem !== editorRef.current) {
+      editorRef.current = editorItem;
+      setEdName(editorItem.name || "");
+      setEdEmoji(editorItem.emoji || "\u{1F37D}");
+      setEdText(editorItem.ingredientText || "");
+      setEdSaving(false);
+    }
+    if (!editorItem) editorRef.current = null;
+  }, [editorItem]);
+  const cycleEditorEmoji = () => {
+    const idx = FOOD_EMOJIS.indexOf(edEmoji);
+    setEdEmoji(FOOD_EMOJIS[(idx + 1) % FOOD_EMOJIS.length]);
+  };
+  const saveEditor = async () => {
+    if (!editorItem) return;
+    const changes = {
+      name: edName.slice(0, 40).trim() || "Untitled",
+      emoji: edEmoji,
+      ingredientText: edText,
+      updatedAt: Date.now()
+    };
+    if (edText.trim() && edText !== (editorItem.ingredientText || "") && state.apiKey) {
+      setEdSaving(true);
+      try {
+        const nutrients = await estimateNutrients(edText, state.apiKey, state.aiModel);
+        if (nutrients) {
+          NUTRIENT_KEYS.forEach(k => {
+            if (nutrients[k] == null || isNaN(nutrients[k])) nutrients[k] = 0;
+          });
+          changes.nutrients = nutrients;
+        }
+      } catch (e) {
+        showToast({
+          text: "AI estimation failed — saved without nutrient update"
+        });
+      }
+      setEdSaving(false);
+    }
+    setState(s => Modules.Templates.updateTemplate(s, editorItem.id, changes));
+    showToast({
+      text: `Updated ${changes.name}`
+    });
+    setEditorItem(null);
+  };
+  const deleteFromEditor = () => {
+    if (!editorItem) return;
+    setState(s => Modules.Templates.removeTemplate(s, editorItem.id));
+    showToast({
+      text: `Deleted ${editorItem.name}`
+    });
+    setEditorItem(null);
+  };
+
+  // ── Item Editor overlay (edit mode) ────────────────────────────────────
+  if (editorItem) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "fixed inset-0 z-[70] animate-fade-in"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "absolute inset-0 bg-black/30 dark:bg-black/50 backdrop-blur-sm",
+      onClick: () => setEditorItem(null)
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "absolute bottom-0 left-0 right-0 bg-surface-container dark:bg-[#0a0a0a] modal-sheet max-h-[85vh] flex flex-col animate-slide-up",
+      style: kbOffset > 0 ? {
+        paddingBottom: kbOffset
+      } : undefined
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex justify-center pt-3 pb-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-10 h-1 rounded-full bg-on-surface/20"
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center justify-between px-5 pb-3"
+    }, /*#__PURE__*/React.createElement("h2", {
+      className: "font-headline text-lg font-bold"
+    }, "Edit Item"), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-1"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: deleteFromEditor,
+      className: "p-2 hover:bg-on-surface/10 rounded-full transition text-red-400",
+      "aria-label": "Delete",
+      "data-testid": "editor-delete"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "delete",
+      size: 20
+    })), /*#__PURE__*/React.createElement("button", {
+      onClick: () => setEditorItem(null),
+      className: "p-2 hover:bg-on-surface/10 rounded-full transition",
+      "aria-label": "Cancel",
+      "data-testid": "editor-cancel"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "close",
+      size: 20
+    })), /*#__PURE__*/React.createElement("button", {
+      onClick: saveEditor,
+      disabled: edSaving || !edName.trim(),
+      className: "p-2 hover:bg-on-surface/10 rounded-full transition text-primary-fixed-dim disabled:opacity-40",
+      "aria-label": "Save",
+      "data-testid": "editor-save"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: edSaving ? "hourglass_top" : "check",
+      size: 20
+    })))), /*#__PURE__*/React.createElement("div", {
+      className: "flex-1 overflow-y-auto px-5 pb-24 space-y-4",
+      "data-testid": "item-editor"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex gap-3 items-center"
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: cycleEditorEmoji,
+      className: "w-12 h-12 bg-on-surface/5 rounded-xl flex items-center justify-center text-2xl",
+      "aria-label": "Change emoji"
+    }, edEmoji), /*#__PURE__*/React.createElement("input", {
+      type: "text",
+      autoFocus: true,
+      maxLength: 40,
+      value: edName,
+      onChange: e => setEdName(e.target.value),
+      placeholder: "Item name",
+      "data-testid": "editor-name",
+      className: "flex-1 bg-on-surface/5 rounded-xl px-4 py-2.5 text-sm placeholder:text-on-surface-variant/40"
+    })), /*#__PURE__*/React.createElement("div", {
+      className: "space-y-1"
+    }, /*#__PURE__*/React.createElement("label", {
+      className: "text-xs text-on-surface-variant font-label"
+    }, "Ingredients"), /*#__PURE__*/React.createElement("textarea", {
+      value: edText,
+      onChange: e => setEdText(e.target.value),
+      placeholder: "e.g.\n48g pea protein\n40g rolled oats\n1 banana",
+      rows: 6,
+      "data-testid": "editor-ingredients",
+      className: "w-full bg-on-surface/5 rounded-xl px-4 py-3 text-sm placeholder:text-on-surface-variant/40 resize-none"
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "flex items-center gap-1.5 text-xs text-on-surface-variant/60"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "auto_awesome",
+      size: 14
+    }), /*#__PURE__*/React.createElement("span", null, "Nutrients calculated automatically from ingredients"))))));
+  }
 
   // ── Custom Food Wizard (inline overlay) ─────────────────────────────────
   if (wizardOpen) {
@@ -1740,39 +1998,46 @@ function LogDaySheet({
     onClick: () => setTab(t),
     className: `flex-1 py-2 rounded-full text-sm font-semibold font-label transition-all ${tab === t ? "pill-active text-white" : "text-on-surface-variant"}`
   }, t === "meals" ? "Meals" : "Supplements")))), /*#__PURE__*/React.createElement("div", {
-    className: "flex-1 overflow-y-auto px-5 pb-24 space-y-4"
-  }, filteredTemplates.length > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-headline text-base font-semibold"
-  }, "Your Templates"), /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"
-  }, filteredTemplates.map(tpl => {
-    const res = Modules.Templates.resolveTemplate(tpl, allRecipes);
-    const degraded = !res.ok;
-    return /*#__PURE__*/React.createElement("button", {
-      key: tpl.id,
-      "data-testid": "template-chip",
-      "data-template-id": tpl.id,
-      "data-degraded": degraded ? "true" : "false",
-      disabled: degraded,
-      onClick: () => logTemplate(tpl),
-      title: degraded ? "Some items unavailable" : `Log ${tpl.name}`,
-      className: `shrink-0 px-4 py-2 rounded-full text-sm font-label border flex items-center gap-1.5 transition-all ${degraded ? "border-on-surface/10 bg-on-surface/5 text-on-surface-variant/40 opacity-50 cursor-not-allowed" : "border-primary/40 bg-primary/10 text-white hover:bg-primary/20"}`
-    }, degraded && /*#__PURE__*/React.createElement(Icon, {
-      name: "error",
-      size: 16,
-      className: "text-orange-400"
-    }), /*#__PURE__*/React.createElement("span", null, tpl.emoji, " ", tpl.name));
-  }))), tab === "meals" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: `flex-1 overflow-y-auto px-5 pb-24 space-y-4${editMode ? "" : ""}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setEditMode(!editMode);
+      if (editMode) setEditorItem(null);
+    },
+    "data-testid": "edit-toggle",
+    className: `text-sm font-semibold font-label px-3 py-1 rounded-lg transition-all ${editMode ? "bg-primary/15 text-primary-fixed-dim" : "text-primary-fixed-dim"}`
+  }, editMode ? "Done" : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Icon, {
+    name: "edit",
+    size: 14,
+    className: "inline -mt-0.5 mr-1"
+  }), "Edit")), /*#__PURE__*/React.createElement("span", {
+    className: "text-xs text-on-surface-variant"
+  }, editMode ? "Tap chip to edit" : "Tap to log")), tab === "meals" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2",
     "data-testid": "meal-pills"
-  }, filteredMealRecipes.map(([id, r]) => /*#__PURE__*/React.createElement("button", {
-    key: id,
-    onClick: () => handleSelectRecipe(id),
-    "aria-pressed": selectedRecipes.includes(id),
-    className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${selectedRecipes.includes(id) ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
-  }, r.emoji, " ", r.name))), filteredCustomFoods.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, (lowerQuery ? filteredMealItems : filteredMealItems.slice(0, 6)).map(item => {
+    const rid = item.sourceRecipeId || item.id;
+    const isSelected = selectedRecipes.includes(rid);
+    const isDegraded = !item.nutrients && Array.isArray(item.refs) && item.refs.length > 0 && item.refs.some(r => !allRecipes[r.recipeId]);
+    return /*#__PURE__*/React.createElement("button", {
+      key: item.id,
+      onClick: () => isDegraded ? null : editMode ? setEditorItem(item) : handleLogItem(item),
+      disabled: isDegraded,
+      "aria-pressed": isSelected,
+      "data-testid": "item-chip",
+      "data-item-id": item.id,
+      "data-degraded": isDegraded || undefined,
+      className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${isDegraded ? "border-on-surface/10 bg-on-surface/5 text-on-surface-variant/40 opacity-50 cursor-not-allowed" : editMode ? "animate-jiggle border-on-surface/10 bg-on-surface/5 text-on-surface-variant" : isSelected ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
+    }, editMode && !isDegraded && /*#__PURE__*/React.createElement("span", {
+      className: "delete-badge",
+      onClick: e => {
+        e.stopPropagation();
+        handleDeleteItem(item.id, item.name);
+      }
+    }, "-"), item.emoji, " ", item.name);
+  })), !editMode && filteredCustomFoods.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "font-headline text-sm font-semibold text-on-surface-variant"
@@ -1784,14 +2049,14 @@ function LogDaySheet({
     onClick: () => {
       if (!longPressFired.current) toggleCustomFood(cf.id);
     },
-    onPointerDown: () => startLongPress(cf),
+    onPointerDown: () => !editMode && startLongPress(cf),
     onPointerUp: cancelLongPress,
     onPointerLeave: cancelLongPress,
     "data-testid": "custom-food-chip",
     "data-cf-id": cf.id,
     "aria-pressed": !!selectedCustomFoods[cf.id],
     className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${selectedCustomFoods[cf.id] ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
-  }, cf.emoji, " ", cf.name)))), filteredIngredients.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, cf.emoji, " ", cf.name)))), !editMode && filteredIngredients.length > 0 && /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
   }, /*#__PURE__*/React.createElement("h3", {
     className: "font-headline text-sm font-semibold text-on-surface-variant"
@@ -1805,82 +2070,27 @@ function LogDaySheet({
     "data-ing-id": ing.id,
     "aria-pressed": !!selectedIngredients[ing.id],
     className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${selectedIngredients[ing.id] ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
-  }, CATEGORY_EMOJI[ing.category] || "\u{1F37D}", " ", ing.name)))), selectedRecipe && allRecipes[selectedRecipe] && /*#__PURE__*/React.createElement("div", {
-    className: "space-y-3"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-headline text-base font-semibold"
-  }, "Ingredients"), ingredientStates.map((ing, idx) => {
-    const ingData = Modules.Catalog.getIngredient(ing.id);
-    if (!ingData) return null;
-    return /*#__PURE__*/React.createElement("div", {
-      key: idx,
-      className: "liquid-glass p-4 rounded-3xl space-y-2"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center justify-between"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "text-sm font-semibold"
-    }, ingData.name), ing.swapGroup && Modules.Catalog.getSwapGroup(ing.swapGroup) && /*#__PURE__*/React.createElement(SwapDropdown, {
-      group: ing.swapGroup,
-      currentId: ing.id,
-      onSwap: newId => swapIngredient(idx, newId)
-    })), /*#__PURE__*/React.createElement("div", {
-      className: "flex items-center gap-2"
-    }, /*#__PURE__*/React.createElement("input", {
-      type: "number",
-      value: ing.qty,
-      onChange: e => updateIngQty(idx, parseFloat(e.target.value) || 0),
-      className: "w-20 bg-on-surface/5 rounded-xl px-3 py-1.5 text-sm text-center"
-    }), /*#__PURE__*/React.createElement("span", {
-      className: "text-xs text-on-surface-variant"
-    }, ingData.unit)));
-  }), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2"
-  }, /*#__PURE__*/React.createElement("h3", {
-    className: "font-headline text-base font-semibold"
-  }, "Projected Macros"), /*#__PURE__*/React.createElement("div", {
-    className: "asymmetric-grid"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "liquid-glass rounded-3xl p-4 flex flex-col justify-center"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-3xl font-headline font-extrabold"
-  }, computeCalories(projectedNutrients)), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-on-surface-variant mt-1"
-  }, "kcal")), /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "liquid-glass rounded-2xl p-3"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-on-surface-variant"
-  }, "Protein"), /*#__PURE__*/React.createElement("p", {
-    className: "font-semibold text-sm"
-  }, Math.round(projectedNutrients.protein), "g")), /*#__PURE__*/React.createElement("div", {
-    className: "liquid-glass rounded-2xl p-3"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-on-surface-variant"
-  }, "Carbs"), /*#__PURE__*/React.createElement("p", {
-    className: "font-semibold text-sm"
-  }, Math.round(projectedNutrients.carbs), "g"))))))), tab === "supplements" && /*#__PURE__*/React.createElement("div", {
+  }, CATEGORY_EMOJI[ing.category] || "\u{1F37D}", " ", ing.name))))), tab === "supplements" && /*#__PURE__*/React.createElement("div", {
     className: "space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-2 gap-2"
-  }, suppRecipes.map(([id, r]) => {
-    const checked = !!checkedSupps[id];
-    return /*#__PURE__*/React.createElement("button", {
-      key: id,
-      onClick: () => toggleSupp(id),
-      className: `flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all ${checked ? "liquid-glass" : "bg-on-surface/5 opacity-50"}`
-    }, /*#__PURE__*/React.createElement(Icon, {
-      name: checked ? "check_circle" : "radio_button_unchecked",
-      size: 20,
-      fill: checked,
-      className: checked ? "text-primary-container" : "text-on-surface-variant"
-    }), /*#__PURE__*/React.createElement("span", {
-      className: "text-sm font-label truncate"
-    }, r.name));
-  })), /*#__PURE__*/React.createElement(ClosingGaps, {
-    suppRecipes: suppRecipes,
+    className: "flex flex-wrap gap-2",
+    "data-testid": "supp-pills"
+  }, (lowerQuery ? filteredSuppItems : filteredSuppItems.slice(0, 6)).map(item => /*#__PURE__*/React.createElement("button", {
+    key: item.id,
+    onClick: () => editMode ? setEditorItem(item) : handleLogItem(item),
+    "data-testid": "item-chip",
+    "data-item-id": item.id,
+    className: `px-4 py-2 rounded-full text-sm font-label transition-all border ${editMode ? "animate-jiggle border-on-surface/10 bg-on-surface/5 text-on-surface-variant" : checkedSupps[item.id] ? "border-primary/40 bg-primary/10 text-white" : "border-on-surface/10 bg-on-surface/5 text-on-surface-variant hover:border-on-surface/20"}`
+  }, editMode && /*#__PURE__*/React.createElement("span", {
+    className: "delete-badge",
+    onClick: e => {
+      e.stopPropagation();
+      handleDeleteItem(item.id, item.name);
+    }
+  }, "-"), item.emoji, " ", item.name))), !editMode && /*#__PURE__*/React.createElement(ClosingGaps, {
+    suppItems: suppItems,
     checkedSupps: checkedSupps,
-    onToggle: toggleSupp
+    onToggle: toggleSuppById
   })), canCreate && (creatingName === null ? /*#__PURE__*/React.createElement("button", {
     onClick: () => setCreatingName(""),
     "data-testid": "create-template",
@@ -1956,7 +2166,7 @@ function SwapDropdown({
 // ClosingGaps (supplements that help close remaining gaps)
 // ============================================================
 function ClosingGaps({
-  suppRecipes,
+  suppItems,
   checkedSupps,
   onToggle
 }) {
@@ -1966,25 +2176,18 @@ function ClosingGaps({
   const gaps = useMemo(() => getOpenGaps(runningTotals), [runningTotals]);
   const helpfulSupps = useMemo(() => {
     const result = [];
-    for (const [id, r] of suppRecipes) {
-      if (checkedSupps[id]) continue;
-      const rStates = r.ingredients.map(i => {
-        var _Modules$Catalog$getI7;
-        return {
-          id: i.id,
-          qty: ((_Modules$Catalog$getI7 = Modules.Catalog.getIngredient(i.id)) === null || _Modules$Catalog$getI7 === void 0 ? void 0 : _Modules$Catalog$getI7.defaultQty) || 1
-        };
-      });
-      const rTotals = Modules.Recipes.calculateNutrition(r, rStates);
-      const helps = gaps.filter(g => g.type === "under" && (rTotals[g.key] || 0) > 0);
+    for (const item of suppItems) {
+      if (checkedSupps[item.id]) continue;
+      const nutrients = item.nutrients || {};
+      const helps = gaps.filter(g => g.type === "under" && (nutrients[g.key] || 0) > 0);
       if (helps.length > 0) result.push({
-        id,
-        name: r.name,
+        id: item.id,
+        name: item.name,
         helps: helps.map(h => h.label)
       });
     }
     return result;
-  }, [suppRecipes, checkedSupps, gaps]);
+  }, [suppItems, checkedSupps, gaps]);
   if (helpfulSupps.length === 0) return null;
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-2"
