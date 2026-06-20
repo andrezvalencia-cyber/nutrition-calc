@@ -3,9 +3,9 @@
     // ============================================================
     // Icon helper
     // ============================================================
-    function Icon({ name, className = "", fill = false, size = 24 }) {
+    function Icon({ name, className = "", fill = false, size = 24, ariaHidden = true }) {
       const style = { fontSize: size, fontVariationSettings: `'FILL' ${fill ? 1 : 0}, 'wght' 400, 'GRAD' 0, 'opsz' ${size}` };
-      return <span className={`material-symbols-outlined select-none ${className}`} style={style}>{name}</span>;
+      return <span className={`material-symbols-outlined select-none ${className}`} style={style} aria-hidden={ariaHidden}>{name}</span>;
     }
 
     // ============================================================

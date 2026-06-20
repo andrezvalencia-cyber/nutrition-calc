@@ -17,7 +17,8 @@ function Icon({
   name,
   className = "",
   fill = false,
-  size = 24
+  size = 24,
+  ariaHidden = true
 }) {
   const style = {
     fontSize: size,
@@ -25,7 +26,8 @@ function Icon({
   };
   return /*#__PURE__*/React.createElement("span", {
     className: `material-symbols-outlined select-none ${className}`,
-    style: style
+    style: style,
+    "aria-hidden": ariaHidden
   }, name);
 }
 

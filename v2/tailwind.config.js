@@ -27,9 +27,9 @@ module.exports = {
       },
       borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "1.5rem", full: "9999px" },
       fontFamily: {
-        headline: ["Manrope", "sans-serif"],
-        body: ["Inter", "sans-serif"],
-        label: ["Inter", "sans-serif"],
+        headline: ["Manrope", "Manrope-fallback", "sans-serif"],
+        body: ["Inter", "Inter-fallback", "sans-serif"],
+        label: ["Inter", "Inter-fallback", "sans-serif"],
       },
     },
   },
