@@ -99,15 +99,19 @@ test('multi-select: two meals selected before Confirm produce two dayLog entries
   await page.locator('button:has-text("add_circle")').first().click();
   await page.waitForSelector('h2:has-text("Log Entry")', { timeout: 8000 });
 
-  // Click Lunch and Dinner cards (renamed from "Standard Lunch" / "Standard Dinner")
+  // Click Lunch (visible in default 6-item slice)
   const lunchBtn = page.getByRole('button', { name: /^\S+\s+Lunch$/ });
-  const dinnerBtn = page.getByRole('button', { name: /^\S+\s+Dinner$/ });
   await lunchBtn.click();
-  await dinnerBtn.click();
-
-  // Both should show aria-pressed=true (active state)
   await expect(lunchBtn).toHaveAttribute('aria-pressed', 'true');
+
+  // Search for Dinner (may be beyond the 6-item slice)
+  await page.locator('[data-testid="log-search"]').fill('Dinner');
+  const dinnerBtn = page.getByRole('button', { name: /^\S+\s+Dinner$/ });
+  await dinnerBtn.click();
   await expect(dinnerBtn).toHaveAttribute('aria-pressed', 'true');
+
+  // Clear search to verify both selections persist
+  await page.locator('[data-testid="log-search"]').fill('');
 
   // Confirm
   await page.click('button:has-text("Confirm Entry")');

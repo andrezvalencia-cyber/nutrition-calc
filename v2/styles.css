@@ -198,6 +198,41 @@ body {
   animation: toastOut 0.3s ease-in forwards;
 }
 
+/* ---- Jiggle animation (iOS-style edit mode) ---- */
+@keyframes jiggle {
+  0%   { transform: rotate(-1.5deg); }
+  25%  { transform: rotate(1.5deg); }
+  50%  { transform: rotate(-1deg); }
+  75%  { transform: rotate(1deg); }
+  100% { transform: rotate(-1.5deg); }
+}
+
+.animate-jiggle {
+  animation: jiggle 0.3s ease-in-out infinite;
+  position: relative;
+}
+
+.animate-jiggle:nth-child(even) {
+  animation-delay: -0.15s;
+}
+
+.delete-badge {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ba1a1a;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 20px;
+  text-align: center;
+  z-index: 1;
+  cursor: pointer;
+}
+
 /* ---- Safe area bottom nav (Android Chrome / iOS) ---- */
 nav[class*="fixed"][class*="bottom"] {
   bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
