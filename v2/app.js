@@ -938,28 +938,6 @@ function HomeScreen({
     closed: gapsClosed,
     total: 16
   }), /*#__PURE__*/React.createElement("div", {
-    className: "flex flex-col items-center gap-1.5"
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: onOpenLog,
-    "data-testid": "quick-entry-button",
-    "aria-label": "Quick entry",
-    className: "liquid-glass w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition-transform",
-    style: {
-      transitionTimingFunction: "var(--spring-ease)"
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    name: "add",
-    size: 28,
-    className: "text-blue-400"
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "text-xs text-on-surface-variant text-center"
-  }, "Quick Entry")), /*#__PURE__*/React.createElement(FocusPoints, {
-    gaps: gaps,
-    runningTotals: runningTotals
-  }), gaps.length > 0 && /*#__PURE__*/React.createElement("button", {
-    onClick: () => onTabChange("dashboard"),
-    className: "w-full text-center text-sm text-primary-fixed-dim hover:text-white transition py-2"
-  }, "View Full Report"), /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "font-headline text-lg font-bold"
@@ -994,13 +972,21 @@ function HomeScreen({
     className: "text-blue-400"
   })), /*#__PURE__*/React.createElement("button", {
     onClick: onOpenLog,
+    "data-testid": "quick-entry-button",
+    "aria-label": "Quick log entry",
     className: "p-1.5 rounded-full hover:bg-on-surface/10 transition"
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "add_circle",
     size: 22,
     className: "text-blue-400",
     fill: true
-  })))), showScanner && /*#__PURE__*/React.createElement(CameraScanModal, {
+  })))), /*#__PURE__*/React.createElement(FocusPoints, {
+    gaps: gaps,
+    runningTotals: runningTotals
+  }), gaps.length > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => onTabChange("dashboard"),
+    className: "w-full text-center text-sm text-primary-fixed-dim hover:text-white transition py-2"
+  }, "View Full Report"), showScanner && /*#__PURE__*/React.createElement(CameraScanModal, {
     onDecode: text => {
       setQuickText(text.slice(0, MAX_QUICK_TEXT));
       setShowScanner(false);

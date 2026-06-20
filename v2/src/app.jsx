@@ -721,31 +721,6 @@
         <div className="pt-20 pb-28 px-4 space-y-6">
           <ProgressRing closed={gapsClosed} total={16} />
 
-          {/* Quick Entry — opens the log sheet in a clean, focus-ready state */}
-          <div className="flex flex-col items-center gap-1.5">
-            <button
-              onClick={onOpenLog}
-              data-testid="quick-entry-button"
-              aria-label="Quick entry"
-              className="liquid-glass w-16 h-16 rounded-full flex items-center justify-center active:scale-95 transition-transform"
-              style={{ transitionTimingFunction: "var(--spring-ease)" }}
-            >
-              <Icon name="add" size={28} className="text-blue-400" />
-            </button>
-            <span className="text-xs text-on-surface-variant text-center">Quick Entry</span>
-          </div>
-
-          <FocusPoints gaps={gaps} runningTotals={runningTotals} />
-
-          {gaps.length > 0 && (
-            <button
-              onClick={() => onTabChange("dashboard")}
-              className="w-full text-center text-sm text-primary-fixed-dim hover:text-white transition py-2"
-            >
-              View Full Report
-            </button>
-          )}
-
           {/* Quick Entry */}
           <div className="space-y-3">
             <h2 className="font-headline text-lg font-bold">Quick Entry</h2>
@@ -777,11 +752,22 @@
                   <Icon name="barcode_scanner" size={22} className="text-blue-400" />
                 </button>
               )}
-              <button onClick={onOpenLog} className="p-1.5 rounded-full hover:bg-on-surface/10 transition">
+              <button onClick={onOpenLog} data-testid="quick-entry-button" aria-label="Quick log entry" className="p-1.5 rounded-full hover:bg-on-surface/10 transition">
                 <Icon name="add_circle" size={22} className="text-blue-400" fill />
               </button>
             </div>
           </div>
+
+          <FocusPoints gaps={gaps} runningTotals={runningTotals} />
+
+          {gaps.length > 0 && (
+            <button
+              onClick={() => onTabChange("dashboard")}
+              className="w-full text-center text-sm text-primary-fixed-dim hover:text-white transition py-2"
+            >
+              View Full Report
+            </button>
+          )}
 
           {showScanner && (
             <CameraScanModal
